@@ -535,6 +535,8 @@ version = "0.1.0"
 dependencies = [
  "async-graphql",
  "eyre",
+ "serde",
+ "serde_json",
  "sqlx",
  "tracing",
 ]

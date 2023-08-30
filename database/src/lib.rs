@@ -7,6 +7,7 @@ use std::{str::FromStr, time::Duration};
 use tracing::{info, instrument, log::LevelFilter};
 
 mod provider;
+mod types;
 
 pub use provider::Provider;
 
