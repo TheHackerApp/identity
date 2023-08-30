@@ -1,5 +1,5 @@
 use clap::Parser;
-use common::{database, logging};
+use common::logging;
 use eyre::WrapErr;
 use tracing::{debug, Level};
 

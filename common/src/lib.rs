@@ -1,6 +1,5 @@
 use eyre::WrapErr;
 
-pub mod database;
 pub mod logging;
 
 /// Load environment variables from a .env file, if it exists.

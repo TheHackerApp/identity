@@ -6,6 +6,10 @@ use sqlx::{
 use std::{str::FromStr, time::Duration};
 use tracing::{info, instrument, log::LevelFilter};
 
+mod provider;
+
+pub use provider::Provider;
+
 /// Connect to the database and ensure it works
 #[instrument(skip_all)]
 pub async fn connect(url: &str) -> eyre::Result<PgPool> {

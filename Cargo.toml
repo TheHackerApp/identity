@@ -8,6 +8,7 @@ edition = "2021"
 [workspace]
 members = [
   "common",
+  "database",
   "migrator",
   "xtask",
 ]
@@ -21,4 +22,5 @@ tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
 tracing = { version = "0.1", features = ["log"] }
 
 common = { path = "./common" }
+database = { path = "./database" }
 migrator = { path = "./migrator" }

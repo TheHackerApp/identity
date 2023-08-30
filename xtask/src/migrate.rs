@@ -1,5 +1,5 @@
 pub async fn run(args: Args) -> eyre::Result<()> {
-    let db = common::database::connect(&args.database_url).await?;
+    let db = database::connect(&args.database_url).await?;
 
     match args.command {
         Command::Add { name } => migrator::add(name.join("_"))?,

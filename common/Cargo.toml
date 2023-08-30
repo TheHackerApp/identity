@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 dotenvy = "0.15"
 eyre = { workspace = true }
-sqlx = { workspace = true }
 tracing = { workspace = true }
 tracing-error = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

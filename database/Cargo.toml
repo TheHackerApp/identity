@@ -1,16 +1,11 @@
 [package]
-name = "xtask"
+name = "database"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { workspace = true }
-color-eyre = { workspace = true }
-common = { workspace = true }
-database = { workspace = true }
 eyre = { workspace = true }
-migrator = { workspace = true }
-tokio = { workspace = true }
+sqlx = { workspace = true }
 tracing = { workspace = true }
