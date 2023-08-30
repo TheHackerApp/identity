@@ -1,3 +1,6 @@
+use crate::types::Json;
+use serde::{Deserialize, Serialize};
+
 /// Configuration for an authentication provider
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "graphql", derive(async_graphql::SimpleObject))]
@@ -16,5 +19,22 @@ pub struct Provider {
     #[cfg_attr(feature = "graphql", graphql(skip))]
     pub client_secret: String,
     /// Provider-specific configuration, i.e. implementation kind, OIDC URLs, scopes, etc
-    pub config: String,
+    pub config: Json<ProviderConfiguration>,
+}
+
+/// The provider-specific configuration
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind")]
+pub enum ProviderConfiguration {
+    /// An OpenID connect provider
+    OpenIDConnect {
+        /// The URL to use for authorization according to RFC 6749 section 3.1
+        authorization_endpoint: String,
+        /// The URL to use for obtaining an access token according to RFC 6749 section 3.2
+        token_endpoint: String,
+        /// The URL to use for retrieving user info
+        user_info_endpoint: String,
+        /// The scopes to request when authorizing
+        scopes: String,
+    },
 }
