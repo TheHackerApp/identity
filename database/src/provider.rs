@@ -1,4 +1,5 @@
 use crate::types::Json;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Configuration for an authentication provider
@@ -15,6 +16,10 @@ pub struct Provider {
     pub icon: String,
     /// Provider-specific configuration, i.e. implementation kind, OIDC URLs, scopes, etc
     pub config: Json<ProviderConfiguration>,
+    /// When the provider was created
+    pub created_at: DateTime<Utc>,
+    /// WHen the provider was last updated
+    pub updated_at: DateTime<Utc>,
 }
 
 /// The provider-specific configuration
