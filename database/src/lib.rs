@@ -9,7 +9,7 @@ use tracing::{info, instrument, log::LevelFilter};
 mod provider;
 mod types;
 
-pub use provider::Provider;
+pub use provider::{Provider, ProviderConfiguration};
 
 /// Connect to the database and ensure it works
 #[instrument(skip_all)]
