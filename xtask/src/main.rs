@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use common::logging;
 use tracing::{debug, Level};
 
+mod export_schema;
 mod migrate;
 
 #[tokio::main]
@@ -15,6 +16,7 @@ async fn main() -> eyre::Result<()> {
     debug!(?args);
 
     match args.command {
+        Command::ExportSchema(args) => export_schema::run(args),
         Command::Migrate(args) => migrate::run(args).await,
     }
 }
@@ -33,6 +35,8 @@ pub struct Args {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    /// Export the GraphQL schema to a file
+    ExportSchema(export_schema::Args),
     /// Manage database migrations
     Migrate(migrate::Args),
 }

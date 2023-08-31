@@ -2442,6 +2442,7 @@ dependencies = [
  "common",
  "database",
  "eyre",
+ "graphql",
  "migrator",
  "tokio",
  "tracing",
