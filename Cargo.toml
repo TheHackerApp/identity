@@ -9,6 +9,7 @@ edition = "2021"
 members = [
   "common",
   "database",
+  "graphql",
   "migrator",
   "xtask",
 ]
@@ -27,4 +28,5 @@ tracing = { version = "0.1", features = ["log"] }
 
 common = { path = "./common" }
 database = { path = "./database" }
+graphql = { path = "./graphql" }
 migrator = { path = "./migrator" }
