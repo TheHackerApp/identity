@@ -1,14 +1,40 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+mod handlers;
+mod logging;
+
+use axum::{extract::FromRef, routing::get, Router};
+use sqlx::PgPool;
+use tower::ServiceBuilder;
+
+/// Setup the routes
+pub fn router(db: PgPool) -> Router {
+    let state = AppState::new(db);
+
+    Router::new()
+        .route(
+            "/graphql",
+            get(handlers::playground).post(handlers::graphql),
+        )
+        .with_state(state)
+        .layer(ServiceBuilder::new().layer(logging::layer()))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[derive(Clone)]
+pub(crate) struct AppState {
+    pub db: PgPool,
+    pub schema: graphql::Schema,
+}
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl AppState {
+    pub fn new(db: PgPool) -> AppState {
+        AppState {
+            db,
+            schema: graphql::schema(),
+        }
+    }
+}
+
+impl FromRef<AppState> for PgPool {
+    fn from_ref(state: &AppState) -> Self {
+        state.db.clone()
     }
 }
