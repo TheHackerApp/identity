@@ -11,6 +11,7 @@ mod types;
 
 pub use provider::{Provider, ProviderConfiguration};
 pub use sqlx::PgPool;
+pub use types::Json;
 
 /// Connect to the database and ensure it works
 #[instrument(skip_all)]
