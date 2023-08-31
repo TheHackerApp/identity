@@ -1,15 +1,173 @@
 
-
-
-
-type Query {
+"""
+Input fields for creating a provider
+"""
+input CreateProviderInput {
 	"""
-	Hello world
+	A unique slug
 	"""
-	hello: String!
+	slug: String!
+	"""
+	The public-facing display name
+	"""
+	name: String!
+	"""
+	The icon to show next to the display name
+	"""
+	icon: String!
+	"""
+	The provider-specific configuration
+	"""
+	config: JSON!
+}
+
+type CreateProviderResult {
+	"""
+	The created authentication provider
+	"""
+	provider: Provider
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
+Implement the DateTime<Utc> scalar
+
+The input/output is a string in RFC3339 format.
+"""
+scalar DateTime
+
+type DeleteProviderResult {
+	"""
+	The slug of the deleted authentication provider
+	"""
+	deletedSlug: String
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
 }
 
 
+
+
+scalar JSON
+
+type Mutation {
+	"""
+	Add a new authentication provider. The provider will be disabled by default.
+	"""
+	createProvider(input: CreateProviderInput!): CreateProviderResult!
+	"""
+	Update the details of an authentication provider
+	"""
+	updateProvider(input: UpdateProviderInput!): UpdateProviderResult!
+	"""
+	Delete an authentication provider
+	"""
+	deleteProvider(slug: String!): DeleteProviderResult!
+}
+
+"""
+Configuration for an authentication provider
+"""
+type Provider {
+	"""
+	A unique identifier for the provider
+	"""
+	slug: String!
+	"""
+	Whether the provider can be used for authentication
+	"""
+	enabled: Boolean!
+	"""
+	The display name
+	"""
+	name: String!
+	"""
+	The URL for the provider's icon
+	"""
+	icon: String!
+	"""
+	Provider-specific configuration, i.e. implementation kind, OIDC URLs, scopes, etc
+	"""
+	config: JSON!
+	"""
+	When the provider was created
+	"""
+	createdAt: DateTime!
+	"""
+	WHen the provider was last updated
+	"""
+	updatedAt: DateTime!
+}
+
+type Query {
+	"""
+	Get all the authentication providers
+	"""
+	providers: [Provider!]!
+	"""
+	Get an authentication provider by it's slug
+	"""
+	provider(slug: String!): Provider
+}
+
+
+"""
+Input fields for updating a provider
+"""
+input UpdateProviderInput {
+	"""
+	The slug of the provider to update
+	"""
+	slug: String!
+	"""
+	Whether the provider can be used
+	"""
+	enabled: Boolean
+	"""
+	The public-facing display name
+	"""
+	name: String
+	"""
+	The icon to show next to the display name
+	"""
+	icon: String
+	"""
+	The provider-specific configuration
+	"""
+	config: JSON
+}
+
+type UpdateProviderResult {
+	"""
+	The authentication provider
+	"""
+	provider: Provider
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
+Represents and error in the input of a mutation
+"""
+type UserError {
+	"""
+	The path to the input field that caused the error
+	"""
+	field: [String!]!
+	"""
+	The error message
+	"""
+	message: String!
+}
+
 schema {
 	query: Query
+	mutation: Mutation
 }

@@ -859,6 +859,7 @@ dependencies = [
  "async-trait",
  "database",
  "tracing",
+ "url",
 ]
 
 [[package]]

@@ -1,11 +1,26 @@
-use async_graphql::Object;
+use async_graphql::{Context, Object, Result};
+use database::{PgPool, Provider};
+use tracing::instrument;
 
 pub struct Query;
 
 #[Object]
 impl Query {
-    /// Hello world
-    async fn hello(&self) -> &'static str {
-        "world"
+    /// Get all the authentication providers
+    #[instrument(name = "Query::providers", skip_all)]
+    async fn providers(&self, ctx: &Context<'_>) -> Result<Vec<Provider>> {
+        let db = ctx.data::<PgPool>()?;
+        let providers = Provider::all(&db).await?;
+
+        Ok(providers)
+    }
+
+    /// Get an authentication provider by it's slug
+    #[instrument(name = "Query::provider", skip(self, ctx))]
+    async fn provider(&self, ctx: &Context<'_>, slug: String) -> Result<Option<Provider>> {
+        let db = ctx.data::<PgPool>()?;
+        let provider = Provider::find(&slug, &db).await?;
+
+        Ok(provider)
     }
 }
