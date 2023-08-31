@@ -10,7 +10,7 @@ mod provider;
 mod types;
 
 pub use provider::{Provider, ProviderConfiguration};
-pub use sqlx::PgPool;
+pub use sqlx::{Error, PgPool};
 pub use types::Json;
 
 /// Connect to the database and ensure it works
