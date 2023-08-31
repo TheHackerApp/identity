@@ -13,7 +13,6 @@ common = { workspace = true }
 database = { workspace = true }
 eyre = { workspace = true }
 graphql = { workspace = true }
-sqlx = { workspace = true }
 tokio = { workspace = true, features = ["signal"] }
 tower = { version = "0.4", default-features = false }
 tower-http = { version = "0.4", default-features = false, features = ["request-id", "trace"] }

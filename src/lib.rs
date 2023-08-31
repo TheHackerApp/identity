@@ -2,7 +2,7 @@ mod handlers;
 mod logging;
 
 use axum::{extract::FromRef, routing::get, Router};
-use sqlx::PgPool;
+use database::PgPool;
 use tower::ServiceBuilder;
 
 /// Setup the routes

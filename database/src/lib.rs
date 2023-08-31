@@ -1,7 +1,7 @@
 use eyre::WrapErr;
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
-    ConnectOptions, PgPool,
+    ConnectOptions,
 };
 use std::{str::FromStr, time::Duration};
 use tracing::{info, instrument, log::LevelFilter};
@@ -10,6 +10,7 @@ mod provider;
 mod types;
 
 pub use provider::{Provider, ProviderConfiguration};
+pub use sqlx::PgPool;
 
 /// Connect to the database and ensure it works
 #[instrument(skip_all)]

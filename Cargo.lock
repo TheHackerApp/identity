@@ -857,6 +857,7 @@ version = "0.1.0"
 dependencies = [
  "async-graphql",
  "async-trait",
+ "database",
  "tracing",
 ]
 
@@ -1083,7 +1084,6 @@ dependencies = [
  "database",
  "eyre",
  "graphql",
- "sqlx",
  "tokio",
  "tower",
  "tower-http",
