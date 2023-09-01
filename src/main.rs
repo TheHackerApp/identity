@@ -1,5 +1,6 @@
 use axum::Server;
 use clap::Parser;
+use common::logging::{OpenTelemetry, OpenTelemetryProtocol};
 use eyre::WrapErr;
 use std::net::SocketAddr;
 use tokio::signal;
@@ -11,7 +12,13 @@ async fn main() -> eyre::Result<()> {
     common::dotenv()?;
 
     let config = Config::parse();
-    common::logging::init(config.log_level);
+    common::logging::init(
+        config.log_level,
+        OpenTelemetry::new(
+            config.opentelemetry_endpoint.as_deref(),
+            config.opentelemetry_protocol,
+        ),
+    )?;
 
     let db = database::connect(&config.database_url).await?;
 
@@ -63,4 +70,17 @@ struct Config {
     /// The default level to log at
     #[arg(long, default_value_t = Level::INFO, env = "LOG_LEVEL")]
     log_level: Level,
+
+    /// The OpenTelemetry endpoint to send traces to
+    #[arg(long, env = "OTEL_EXPORTER_OTLP_ENDPOINT")]
+    opentelemetry_endpoint: Option<String>,
+
+    /// The protocol to use when exporting OpenTelemetry traces
+    #[arg(
+        long,
+        default_value = "grpc",
+        value_parser = common::logging::opentelemetry_protocol_parser,
+        env = "OTEL_EXPORTER_OTLP_PROTOCOL",
+    )]
+    opentelemetry_protocol: OpenTelemetryProtocol,
 }

@@ -11,7 +11,7 @@ async fn main() -> eyre::Result<()> {
     common::dotenv()?;
 
     let args = Args::parse();
-    logging::init(args.log_level);
+    logging::init(args.log_level, None)?;
 
     debug!(?args);
 

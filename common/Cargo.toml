@@ -8,6 +8,9 @@ edition = "2021"
 [dependencies]
 dotenvy = "0.15"
 eyre = { workspace = true }
+opentelemetry = { version = "0.20", features = ["rt-tokio", "trace"] }
+opentelemetry-otlp = { version = "0.13", default-features = false, features = ["grpc-tonic", "http-proto", "reqwest-client", "reqwest-rustls", "tls", "tls-roots", "trace"] }
 tracing = { workspace = true }
 tracing-error = "0.2"
+tracing-opentelemetry = { version = "0.21", default-features = false, features = ["tracing-log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

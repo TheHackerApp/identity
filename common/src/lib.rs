@@ -1,6 +1,7 @@
 use eyre::WrapErr;
 
 pub mod logging;
+mod otel;
 
 /// Load environment variables from a .env file, if it exists.
 pub fn dotenv() -> eyre::Result<()> {
