@@ -35,7 +35,7 @@ pub fn add(name: String) -> Result<()> {
 
 fn create_file(source: &Path, name: &str, kind: MigrationType) -> Result<()> {
     let mut file_name = Utc::now().format("%Y%m%d%H%M%S").to_string();
-    file_name.push_str("_");
+    file_name.push('_');
     file_name.push_str(name);
     file_name.push_str(kind.suffix());
 

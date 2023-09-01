@@ -50,12 +50,12 @@ impl Mutation {
         }
 
         let db = ctx.data::<PgPool>()?;
-        match Provider::create(&input.slug, &input.name, &input.icon, input.config.0, &db).await {
+        match Provider::create(&input.slug, &input.name, &input.icon, input.config.0, db).await {
             Ok(provider) => Ok(provider.into()),
             Err(e) if e.is_unique_violation() => {
                 Ok(UserError::new(&["slug"], "already in use").into())
             }
-            Err(e) => Err(e.extend().into()),
+            Err(e) => Err(e.extend()),
         }
     }
 
