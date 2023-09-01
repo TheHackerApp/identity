@@ -1,4 +1,4 @@
-use super::{results, validators, Mutation, UserError};
+use super::{results, validators, UserError};
 use async_graphql::{Context, ErrorExtensions, InputObject, Object, Result, ResultExt};
 use database::{Json, PgPool, Provider, ProviderConfiguration};
 use tracing::instrument;
@@ -18,8 +18,11 @@ results! {
     }
 }
 
+#[derive(Default)]
+pub(crate) struct ProviderMutation;
+
 #[Object]
-impl Mutation {
+impl ProviderMutation {
     /// Add a new authentication provider. The provider will be disabled by default.
     #[instrument(name = "Mutation::create_provider", skip(self, ctx))]
     async fn create_provider(

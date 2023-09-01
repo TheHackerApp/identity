@@ -1,5 +1,5 @@
-use async_graphql::{Context, Object, Result, ResultExt};
-use database::{PgPool, Provider};
+use async_graphql::{Context, Object, OneofObject, Result, ResultExt};
+use database::{PgPool, Provider, User};
 use tracing::instrument;
 
 pub struct Query;
@@ -23,4 +23,26 @@ impl Query {
 
         Ok(provider)
     }
+
+    /// Get a user by their ID
+    #[instrument(name = "Query::user", skip(self, ctx))]
+    async fn user(&self, ctx: &Context<'_>, by: UserBy) -> Result<Option<User>> {
+        let db = ctx.data::<PgPool>()?;
+        let user = match by {
+            UserBy::Id(id) => User::find(id, db).await,
+            UserBy::PrimaryEmail(email) => User::find_by_primary_email(&email, db).await,
+        }
+        .extend()?;
+
+        Ok(user)
+    }
+}
+
+/// How to lookup a user
+#[derive(Debug, OneofObject)]
+enum UserBy {
+    /// By ID
+    Id(i32),
+    /// By primary email
+    PrimaryEmail(String),
 }

@@ -1,3 +1,5 @@
+directive @oneOf on INPUT_OBJECT
+
 
 """
 Input fields for creating a provider
@@ -50,11 +52,28 @@ type DeleteProviderResult {
 	userErrors: [UserError!]!
 }
 
+type DeleteUserResult {
+	"""
+	The ID of the deleted user
+	"""
+	deletedId: Int
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
 
 
 
 scalar JSON
 
+"""
+The various GraphQL mutations
+
+To improve readability, the mutation implementations are split into different files, but all
+attached to this one struct.
+"""
 type Mutation {
 	"""
 	Add a new authentication provider. The provider will be disabled by default.
@@ -68,6 +87,14 @@ type Mutation {
 	Delete an authentication provider
 	"""
 	deleteProvider(slug: String!): DeleteProviderResult!
+	"""
+	Update the details of a user
+	"""
+	updateUser(input: UpdateUserInput!): UpdateUserResult!
+	"""
+	Delete a user
+	"""
+	deleteUser(id: Int!): DeleteUserResult!
 }
 
 """
@@ -113,6 +140,10 @@ type Query {
 	Get an authentication provider by it's slug
 	"""
 	provider(slug: String!): Provider
+	"""
+	Get a user by their ID
+	"""
+	user(by: UserBy!): User
 }
 
 
@@ -151,6 +182,91 @@ type UpdateProviderResult {
 	Errors that may have occurred while processing the action
 	"""
 	userErrors: [UserError!]!
+}
+
+"""
+Input fields for updating a user
+"""
+input UpdateUserInput {
+	"""
+	The ID of the user to update
+	"""
+	id: Int!
+	"""
+	The given/first name
+	"""
+	givenName: String
+	"""
+	The family/last name
+	"""
+	familyName: String
+	"""
+	The primary email as selected by the user
+	"""
+	primaryEmail: String
+	"""
+	Whether the user is an administrator
+	"""
+	isAdmin: Boolean
+}
+
+type UpdateUserResult {
+	"""
+	The user
+	"""
+	user: User
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
+A user of the service
+"""
+type User {
+	"""
+	A unique ID
+	"""
+	id: Int!
+	"""
+	The given/first name
+	"""
+	givenName: String!
+	"""
+	The family/last name
+	"""
+	familyName: String!
+	"""
+	The primary email as selected by the user
+	"""
+	primaryEmail: String!
+	"""
+	Whether the user is an administrator
+	"""
+	isAdmin: Boolean!
+	"""
+	When the user was first created
+	"""
+	createdAt: DateTime!
+	"""
+	When the user was last updated
+	"""
+	updatedAt: DateTime!
+}
+
+"""
+How to lookup a user
+"""
+input UserBy @oneOf {
+	"""
+	How to lookup a user
+	"""
+	id: Int
+	"""
+	How to lookup a user
+	"""
+	primaryEmail: String
 }
 
 """

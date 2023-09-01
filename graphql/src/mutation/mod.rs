@@ -1,13 +1,18 @@
-use async_graphql::SimpleObject;
+use async_graphql::{MergedObject, SimpleObject};
 
 mod providers;
+mod user;
 mod validators;
+
+use providers::ProviderMutation;
+use user::UserMutation;
 
 /// The various GraphQL mutations
 ///
 /// To improve readability, the mutation implementations are split into different files, but all
 /// attached to this one struct.
-pub struct Mutation;
+#[derive(Default, MergedObject)]
+pub struct Mutation(ProviderMutation, UserMutation);
 
 /// Represents and error in the input of a mutation
 #[derive(Debug, SimpleObject)]

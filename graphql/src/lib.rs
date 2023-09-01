@@ -12,7 +12,7 @@ pub type Schema = BaseSchema<Query, Mutation, EmptySubscription>;
 
 /// Build the schema with the necessary extensions
 pub fn schema() -> Schema {
-    Schema::build(Query, Mutation, EmptySubscription)
+    Schema::build(Query, Mutation::default(), EmptySubscription)
         .extension(logging::Logging)
         .extension(Analyzer)
         .finish()
