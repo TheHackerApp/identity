@@ -1,6 +1,6 @@
 use super::{results, UserError};
 use async_graphql::{Context, InputObject, Object, Result, ResultExt};
-use database::{PgPool, User};
+use database::{Identity, PgPool, User};
 use tracing::instrument;
 
 results! {
@@ -50,7 +50,16 @@ impl UserMutation {
             None => return Ok(UserError::new(&["id"], "user does not exist").into()),
         };
 
-        // TODO: check primary email exists for user
+        let identities = Identity::for_user(user.id, db).await.extend()?;
+        if let Some(primary_email) = &input.primary_email {
+            if !identities.iter().any(|i| &i.email == primary_email) {
+                return Ok(UserError::new(
+                    &["primary_email"],
+                    "primary email must be linked to an identity",
+                )
+                .into());
+            }
+        }
 
         user.update()
             .override_given_name(input.given_name)

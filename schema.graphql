@@ -65,6 +65,28 @@ type DeleteUserResult {
 
 
 
+"""
+Maps a user to their authentication provider
+"""
+type Identity {
+	"""
+	The provider the identity corresponds to
+	"""
+	provider: String!
+	"""
+	The email associated with the identity
+	"""
+	email: String!
+	"""
+	When the identity was first created
+	"""
+	createdAt: DateTime!
+	"""
+	When the identity was last updated
+	"""
+	updatedAt: DateTime!
+}
+
 
 scalar JSON
 
@@ -75,6 +97,10 @@ To improve readability, the mutation implementations are split into different fi
 attached to this one struct.
 """
 type Mutation {
+	"""
+	Unlink an authentication provider identity from a user
+	"""
+	unlinkIdentity(input: UnlinkIdentityInput!): UnlinkIdentityResult!
 	"""
 	Add a new authentication provider. The provider will be disabled by default.
 	"""
@@ -146,6 +172,31 @@ type Query {
 	user(by: UserBy!): User
 }
 
+
+"""
+Input for unlinking a user's authentication provider identity
+"""
+input UnlinkIdentityInput {
+	"""
+	The ID of the user to perform the unlinking on
+	"""
+	userId: Int!
+	"""
+	THe provider to unlink
+	"""
+	provider: String!
+}
+
+type UnlinkIdentityResult {
+	"""
+	The provider that was unlinked
+	"""
+	unlinkedProvider: String
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
 
 """
 Input fields for updating a provider
@@ -253,6 +304,10 @@ type User {
 	When the user was last updated
 	"""
 	updatedAt: DateTime!
+	"""
+	The identities the user can login with
+	"""
+	identities: [Identity!]!
 }
 
 """

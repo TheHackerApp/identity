@@ -1,4 +1,6 @@
-use crate::Result;
+use crate::{Identity, Result};
+#[cfg(feature = "graphql")]
+use async_graphql::{ComplexObject, Context, ResultExt};
 use chrono::{DateTime, Utc};
 use sqlx::{query, query_as, PgPool, QueryBuilder};
 use tracing::instrument;
@@ -6,6 +8,7 @@ use tracing::instrument;
 /// A user of the service
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "graphql", derive(async_graphql::SimpleObject))]
+#[cfg_attr(feature = "graphql", graphql(complex))]
 pub struct User {
     /// A unique ID
     pub id: i32,
@@ -78,6 +81,19 @@ impl User {
             .await?;
 
         Ok(())
+    }
+}
+
+#[cfg(feature = "graphql")]
+#[ComplexObject]
+impl User {
+    /// The identities the user can login with
+    #[instrument(name = "User::identities", skip_all)]
+    async fn identities(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Identity>> {
+        let db = ctx.data::<PgPool>()?;
+        let identities = Identity::for_user(self.id, db).await.extend()?;
+
+        Ok(identities)
     }
 }
 
