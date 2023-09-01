@@ -7,7 +7,7 @@ use async_graphql::{
     Response, ServerError, ServerResult, ValidationResult, Value, Variables,
 };
 use std::{sync::Arc, time::Instant};
-use tracing::{debug, error, info, span, Instrument, Level};
+use tracing::{debug, info, span, warn, Instrument, Level};
 
 /// Adds tracing to the GraphQL flow. Adapted from the
 /// [`async_graphql::extensions::Tracing`](https://docs.rs/async-graphql/latest/async_graphql/extensions/struct.Tracing.html)
@@ -121,8 +121,10 @@ impl Extension for LoggingExtension {
                 "finished resolution",
             );
 
+            // we do the actual error handling elsewhere, these errors are typically caused by
+            // user error.
             if let Err(ref err) = result {
-                error!(error = %err.message, locations = ?err.locations, path = ?err.path);
+                warn!(error = %err.message, locations = ?err.locations, path = ?err.path);
             }
 
             result

@@ -1,5 +1,5 @@
 use super::{results, validators, Mutation, UserError};
-use async_graphql::{Context, InputObject, Object, Result};
+use async_graphql::{Context, ErrorExtensions, InputObject, Object, Result, ResultExt};
 use database::{Json, PgPool, Provider, ProviderConfiguration};
 use tracing::instrument;
 
@@ -50,10 +50,13 @@ impl Mutation {
         }
 
         let db = ctx.data::<PgPool>()?;
-        let provider =
-            Provider::create(&input.slug, &input.name, &input.icon, input.config.0, &db).await?;
-
-        Ok(provider.into())
+        match Provider::create(&input.slug, &input.name, &input.icon, input.config.0, &db).await {
+            Ok(provider) => Ok(provider.into()),
+            Err(e) if e.is_unique_violation() => {
+                Ok(UserError::new(&["slug"], "already in use").into())
+            }
+            Err(e) => Err(e.extend().into()),
+        }
     }
 
     /// Update the details of an authentication provider
@@ -85,7 +88,7 @@ impl Mutation {
         }
 
         let db = ctx.data::<PgPool>()?;
-        let mut provider = match Provider::find(&input.slug, db).await? {
+        let mut provider = match Provider::find(&input.slug, db).await.extend()? {
             Some(p) => p,
             None => return Ok(UserError::new(&["slug"], "provider does not exist").into()),
         };
@@ -97,7 +100,8 @@ impl Mutation {
             .override_icon(input.icon)
             .override_config(input.config)
             .save(db)
-            .await?;
+            .await
+            .extend()?;
 
         Ok(provider.into())
     }
@@ -110,7 +114,7 @@ impl Mutation {
         slug: String,
     ) -> Result<DeleteProviderResult> {
         let db = ctx.data::<PgPool>()?;
-        Provider::delete(&slug, db).await?;
+        Provider::delete(&slug, db).await.extend()?;
 
         Ok(slug.into())
     }
