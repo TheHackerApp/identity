@@ -12,10 +12,12 @@ use tracing::{error, info, instrument, log::LevelFilter};
 
 mod provider;
 mod types;
+mod user;
 
 pub use provider::{Provider, ProviderConfiguration};
 pub use sqlx::PgPool;
 pub use types::Json;
+pub use user::User;
 
 pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
