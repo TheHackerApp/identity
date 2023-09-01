@@ -284,6 +284,7 @@ fn validate_applied_migrations(applied_migrations: &[AppliedMigration]) -> Resul
 
     let migrations = MIGRATOR
         .iter()
+        .filter(|m| !m.migration_type.is_down_migration())
         .map(|m| (m.version, m))
         .collect::<HashMap<_, _>>();
 
@@ -291,7 +292,12 @@ fn validate_applied_migrations(applied_migrations: &[AppliedMigration]) -> Resul
         match migrations.get(&applied_migration.version) {
             Some(migration) => {
                 if migration.checksum != applied_migration.checksum {
-                    error!(version = %applied_migration.version, "checksum mismatch, migration was modified after being applied");
+                    error!(
+                        version = applied_migration.version,
+                        applied = %hex::encode(&applied_migration.checksum),
+                        source = %hex::encode(&migration.checksum),
+                        "checksum mismatch, migration was modified after being applied",
+                    );
                     return Err(Error::VersionMismatch(applied_migration.version));
                 }
             }

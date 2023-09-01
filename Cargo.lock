@@ -1247,6 +1247,7 @@ dependencies = [
  "common",
  "database",
  "eyre",
+ "hex",
  "sqlx",
  "tokio",
  "tracing",
