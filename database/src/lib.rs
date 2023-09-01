@@ -3,15 +3,21 @@ use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
     ConnectOptions,
 };
-use std::{str::FromStr, time::Duration};
-use tracing::{info, instrument, log::LevelFilter};
+use std::{
+    fmt::{Debug, Display, Formatter},
+    str::FromStr,
+    time::Duration,
+};
+use tracing::{error, info, instrument, log::LevelFilter};
 
 mod provider;
 mod types;
 
 pub use provider::{Provider, ProviderConfiguration};
-pub use sqlx::{Error, PgPool};
+pub use sqlx::PgPool;
 pub use types::Json;
+
+pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Connect to the database and ensure it works
 #[instrument(skip_all)]
@@ -29,4 +35,55 @@ pub async fn connect(url: &str) -> eyre::Result<PgPool> {
 
     info!("database connected");
     Ok(db)
+}
+
+/// Represents the different way the database can fail
+pub struct Error(sqlx::Error);
+
+impl Error {
+    /// Returns whether the error kind is a violation of a unique/primary key constraint.
+    pub fn is_unique_violation(&self) -> bool {
+        match &self.0 {
+            sqlx::Error::Database(e) => e.is_unique_violation(),
+            _ => false,
+        }
+    }
+}
+
+impl Debug for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.0, f)
+    }
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.0.source()
+    }
+}
+
+#[cfg(feature = "graphql")]
+impl async_graphql::ErrorExtensions for Error {
+    fn extend(&self) -> async_graphql::Error {
+        use std::error::Error as _;
+
+        match self.source() {
+            Some(e) => error!(error = %self.0, source = %e, "unexpected database error"),
+            None => error!(error = %self.0, "unexpected database error"),
+        }
+
+        async_graphql::Error::new("internal server error")
+    }
+}
+
+impl From<sqlx::Error> for Error {
+    fn from(error: sqlx::Error) -> Self {
+        Self(error)
+    }
 }

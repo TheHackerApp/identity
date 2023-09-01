@@ -1,4 +1,4 @@
-use crate::types::Json;
+use crate::{Json, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, PgPool, QueryBuilder};
@@ -73,8 +73,8 @@ impl Debug for ProviderConfiguration {
 impl Provider {
     /// Get all the providers
     #[instrument(name = "Provider::all", skip_all)]
-    pub async fn all(db: &PgPool) -> sqlx::Result<Vec<Provider>> {
-        query_as!(
+    pub async fn all(db: &PgPool) -> Result<Vec<Provider>> {
+        let providers = query_as!(
             Provider,
             r#"
             SELECT 
@@ -85,13 +85,14 @@ impl Provider {
             "#,
         )
         .fetch_all(db)
-        .await
+        .await?;
+        Ok(providers)
     }
 
     /// Get all the enabled providers
     #[instrument(name = "Provider::all_enabled", skip_all)]
-    pub async fn all_enabled(db: &PgPool) -> sqlx::Result<Vec<Provider>> {
-        query_as!(
+    pub async fn all_enabled(db: &PgPool) -> Result<Vec<Provider>> {
+        let providers = query_as!(
             Provider,
             r#"
             SELECT 
@@ -103,13 +104,14 @@ impl Provider {
             "#,
         )
         .fetch_all(db)
-        .await
+        .await?;
+        Ok(providers)
     }
 
     /// Get a provider by it's slug
     #[instrument(name = "Provider::find", skip(db))]
-    pub async fn find(slug: &str, db: &PgPool) -> sqlx::Result<Option<Provider>> {
-        query_as!(
+    pub async fn find(slug: &str, db: &PgPool) -> Result<Option<Provider>> {
+        let provider = query_as!(
             Provider,
             r#"
             SELECT 
@@ -122,13 +124,14 @@ impl Provider {
             slug,
         )
         .fetch_optional(db)
-        .await
+        .await?;
+        Ok(provider)
     }
 
     /// Get an enabled provider by it's slug
     #[instrument(name = "Provider::find_enabled", skip(db))]
-    pub async fn find_enabled(slug: &str, db: &PgPool) -> sqlx::Result<Option<Provider>> {
-        query_as!(
+    pub async fn find_enabled(slug: &str, db: &PgPool) -> Result<Option<Provider>> {
+        let provider = query_as!(
             Provider,
             r#"
             SELECT 
@@ -141,7 +144,8 @@ impl Provider {
             slug,
         )
         .fetch_optional(db)
-        .await
+        .await?;
+        Ok(provider)
     }
 
     /// Create a new provider
@@ -152,8 +156,8 @@ impl Provider {
         icon: &str,
         config: ProviderConfiguration,
         db: &PgPool,
-    ) -> sqlx::Result<Provider> {
-        query_as!(
+    ) -> Result<Provider> {
+        let provider = query_as!(
             Provider,
             r#"
             INSERT INTO providers (slug, name, icon, config) 
@@ -169,7 +173,8 @@ impl Provider {
             Json(config) as _,
         )
         .fetch_one(db)
-        .await
+        .await?;
+        Ok(provider)
     }
 
     /// Update the fields of a provider
@@ -179,7 +184,7 @@ impl Provider {
 
     /// Delete a provider by it's slug
     #[instrument(name = "Provider::delete", skip(db))]
-    pub async fn delete(slug: &str, db: &PgPool) -> sqlx::Result<()> {
+    pub async fn delete(slug: &str, db: &PgPool) -> Result<()> {
         query!("DELETE FROM providers WHERE slug = $1", slug)
             .execute(db)
             .await?;
@@ -261,7 +266,7 @@ impl<'p> ProviderUpdater<'p> {
 
     /// Perform the update
     #[instrument(name = "Provider::update", skip_all, fields(self.slug = %self.provider.slug))]
-    pub async fn save(self, db: &PgPool) -> sqlx::Result<()> {
+    pub async fn save(self, db: &PgPool) -> Result<()> {
         if self.enabled.is_none()
             && self.name.is_none()
             && self.icon.is_none()
