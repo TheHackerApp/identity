@@ -299,6 +299,8 @@ impl<'p> ProviderUpdater<'p> {
             separated.push_bind_unseparated(config);
         }
 
+        builder.push(" WHERE slug = ");
+        builder.push_bind(&self.provider.slug);
         builder.build().execute(db).await?;
 
         if let Some(enabled) = self.enabled {
