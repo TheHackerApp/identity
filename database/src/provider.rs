@@ -27,44 +27,48 @@ pub struct Provider {
 
 /// The provider-specific configuration
 #[derive(Clone, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(tag = "kind")]
+#[serde(tag = "kind", rename_all = "lowercase")]
 pub enum ProviderConfiguration {
-    /// An OpenID connect provider
-    #[serde(rename = "oidc")]
-    OpenIDConnect {
+    /// Google OpenID Connect provider
+    Google {
         /// The client ID
         client_id: String,
         /// The client secret
         client_secret: String,
-        /// The URL to use for authorization according to RFC 6749 section 3.1
-        authorization_endpoint: String,
-        /// The URL to use for obtaining an access token according to RFC 6749 section 3.2
-        token_endpoint: String,
-        /// The URL to use for retrieving user info
-        user_info_endpoint: String,
-        /// The scopes to request when authorizing
-        scopes: String,
+    },
+    /// GitHub OAuth2 provider
+    GitHub {
+        /// The client ID
+        client_id: String,
+        /// The client secret
+        client_secret: String,
+    },
+    /// Discord OAuth2 provider
+    Discord {
+        /// The client ID
+        client_id: String,
+        /// The client secret
+        client_secret: String,
     },
 }
 
 impl Debug for ProviderConfiguration {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::OpenIDConnect {
-                client_id,
-                authorization_endpoint,
-                token_endpoint,
-                user_info_endpoint,
-                scopes,
-                ..
-            } => f
-                .debug_struct("OpenIDConnect")
+            Self::Google { client_id, .. } => f
+                .debug_struct("Google")
                 .field("client_id", &client_id)
                 .field("client_secret", &"<REDACTED>")
-                .field("authorization_endpoint", &authorization_endpoint)
-                .field("token_endpoint", &token_endpoint)
-                .field("user_info_endpoint", &user_info_endpoint)
-                .field("scopes", &scopes)
+                .finish(),
+            Self::GitHub { client_id, .. } => f
+                .debug_struct("GitHub")
+                .field("client_id", &client_id)
+                .field("client_secret", &"<REDACTED>")
+                .finish(),
+            Self::Discord { client_id, .. } => f
+                .debug_struct("Discord")
+                .field("client_id", &client_id)
+                .field("client_secret", &"<REDACTED>")
                 .finish(),
         }
     }
