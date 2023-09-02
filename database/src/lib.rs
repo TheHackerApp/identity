@@ -28,7 +28,7 @@ pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 pub async fn connect(url: &str) -> eyre::Result<PgPool> {
     let options = PgConnectOptions::from_str(url)
         .wrap_err("invalid database url format")?
-        .log_statements(LevelFilter::Debug)
+        .log_statements(LevelFilter::Info)
         .log_slow_statements(LevelFilter::Warn, Duration::from_secs(5));
 
     let db = PgPoolOptions::new()
