@@ -52,6 +52,17 @@ pub enum ProviderConfiguration {
     },
 }
 
+impl ProviderConfiguration {
+    /// Get the kind of provider
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Self::Google { .. } => "google",
+            Self::GitHub { .. } => "github",
+            Self::Discord { .. } => "discord",
+        }
+    }
+}
+
 impl Debug for ProviderConfiguration {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {

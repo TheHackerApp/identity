@@ -5,13 +5,14 @@ use url::Url;
 
 mod handlers;
 mod logging;
+mod oauth;
 mod state;
 
 pub(crate) use state::AppState;
 
 /// Setup the routes
-pub fn router(api_url: Url, db: PgPool) -> Router {
-    let state = AppState::new(api_url, db);
+pub fn router(api_url: Url, db: PgPool, frontend_url: Url) -> Router {
+    let state = AppState::new(api_url, db, frontend_url);
 
     Router::new()
         .route(

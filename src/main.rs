@@ -22,10 +22,11 @@ async fn main() -> eyre::Result<()> {
     )?;
 
     let db = database::connect(&config.database_url).await?;
+    let router = identity::router(config.api_url, db, config.frontend_url);
 
     info!(address = %config.address, "listening and ready to handle requests");
     Server::bind(&config.address)
-        .serve(identity::router(config.api_url, db).into_make_service())
+        .serve(router.into_make_service())
         .with_graceful_shutdown(shutdown())
         .await
         .wrap_err("failed to start server")?;
@@ -79,6 +80,10 @@ struct Config {
     /// The publicly accessible URL for the API
     #[arg(long, env = "API_URL")]
     api_url: Url,
+
+    /// The publicly accessible URL for the frontend
+    #[arg(long, env = "FRONTEND_URL")]
+    frontend_url: Url,
 
     /// The protocol to use when exporting OpenTelemetry traces
     #[arg(
