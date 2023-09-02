@@ -5,6 +5,7 @@ use eyre::WrapErr;
 use std::net::SocketAddr;
 use tokio::signal;
 use tracing::{info, Level};
+use url::Url;
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
@@ -24,7 +25,7 @@ async fn main() -> eyre::Result<()> {
 
     info!(address = %config.address, "listening and ready to handle requests");
     Server::bind(&config.address)
-        .serve(identity::router(db).into_make_service())
+        .serve(identity::router(config.api_url, db).into_make_service())
         .with_graceful_shutdown(shutdown())
         .await
         .wrap_err("failed to start server")?;
@@ -74,6 +75,10 @@ struct Config {
     /// The OpenTelemetry endpoint to send traces to
     #[arg(long, env = "OTEL_EXPORTER_OTLP_ENDPOINT")]
     opentelemetry_endpoint: Option<String>,
+
+    /// The publicly accessible URL for the API
+    #[arg(long, env = "API_URL")]
+    api_url: Url,
 
     /// The protocol to use when exporting OpenTelemetry traces
     #[arg(
