@@ -1,10 +1,12 @@
 use crate::state::ApiUrl;
 use axum::{
     extract::{Path, State},
-    response::{IntoResponse, Redirect, Response},
+    http::StatusCode,
+    response::{IntoResponse, Json, Redirect, Response},
 };
 use database::{PgPool, Provider, ProviderConfiguration};
 use rand::distributions::{Alphanumeric, DistString};
+use serde::Serialize;
 use tracing::{error, instrument};
 
 /// Start the OAuth2 login flow
@@ -81,11 +83,29 @@ impl IntoResponse for Error {
                     Some(source) => error!(%error, %source, "a database error occurred"),
                     None => error!(%error, "a database error occurred"),
                 }
-                todo!()
+                response("internal error", StatusCode::INTERNAL_SERVER_ERROR)
             }
-            Self::NotFound => todo!(),
+            Self::NotFound => response("unknown provider", StatusCode::NOT_FOUND),
         }
     }
+}
+
+/// A generic API error
+#[derive(Serialize)]
+struct ApiError<'m> {
+    message: &'m str,
+}
+
+/// Generate an error response
+#[inline(always)]
+fn response<S: AsRef<str>>(message: S, code: StatusCode) -> Response {
+    (
+        code,
+        Json(ApiError {
+            message: message.as_ref(),
+        }),
+    )
+        .into_response()
 }
 
 #[cfg(test)]

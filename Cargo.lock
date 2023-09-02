@@ -1154,6 +1154,7 @@ dependencies = [
  "form_urlencoded",
  "graphql",
  "rand",
+ "serde",
  "tokio",
  "tower",
  "tower-http",
