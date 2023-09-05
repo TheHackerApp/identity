@@ -22,7 +22,7 @@ pub fn router(
 ) -> Router {
     let sessions = session::Layer::new(
         cache,
-        frontend_url.authority(),
+        frontend_url.host_str().unwrap(),
         frontend_url.scheme() == "https",
         cookie_signing_key,
     );
