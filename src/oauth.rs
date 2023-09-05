@@ -1,11 +1,14 @@
-use crate::state::{ApiUrl, AppState, FrontendUrl};
+use crate::{
+    session::extract::{Mutable, OAuthSession, UnauthenticatedSession},
+    state::{ApiUrl, AppState, FrontendUrl},
+};
 use axum::{
     extract::{Path, Query, State},
     response::Redirect,
 };
-use database::{PgPool, Provider};
+use database::{Identity, PgPool, Provider};
 use serde::Deserialize;
-use tracing::{error, info, instrument};
+use tracing::{error, info, instrument, Span};
 
 mod client;
 mod error;
@@ -17,15 +20,16 @@ use error::{Error, Result};
 #[instrument(name = "oauth::launch", skip_all, fields(%slug))]
 pub(crate) async fn launch(
     Path(slug): Path<String>,
+    session: UnauthenticatedSession<Mutable>,
     State(url): State<ApiUrl>,
     State(client): State<Client>,
     State(db): State<PgPool>,
 ) -> Result<Redirect> {
     if let Some(provider) = Provider::find_enabled(&slug, &db).await? {
         let redirect_url = url.join("/oauth/callback");
-        let (url, _state) = client.build_authorization_url(&provider.config, redirect_url.as_str());
+        let (url, state) = client.build_authorization_url(&provider.config, redirect_url.as_str());
 
-        // TODO: set state in session
+        session.into_oauth(provider.slug, state);
 
         Ok(Redirect::to(&url))
     } else {
@@ -40,22 +44,23 @@ pub(crate) async fn launch(
     fields(
         state = %params.state,
         success = matches!(params.result, CallbackResult::Success { .. }),
+        provider.slug = session.provider,
+        provider.id,
     ),
 )]
 pub(crate) async fn callback(
     Query(params): Query<CallbackParams>,
+    session: OAuthSession,
     State(state): State<AppState>,
 ) -> Result<Redirect> {
-    // TODO: validate state from session
-    if params.state.is_empty() {
+    if params.state != session.state {
         return Err(Error::InvalidState);
     }
 
     let code = params.result.into_code(&state.frontend_url)?;
 
     // Allow in-flight OAuth2 flows to finish even if it the provider was disabled
-    // TODO: load provider from session
-    let provider = Provider::find("github", &state.db)
+    let provider = Provider::find(&session.provider, &state.db)
         .await?
         .ok_or(Error::UnknownProvider)?;
 
@@ -72,15 +77,26 @@ pub(crate) async fn callback(
         .oauth_client
         .user_info(&token, &provider.config)
         .await?;
-    info!(provider.id = %user_info.id, provider.email = %user_info.email, "oauth2 flow complete");
 
-    // TODO: set user session
+    Span::current().record("provider.id", &user_info.id);
+    info!("oauth2 flow complete");
 
-    // TODO: redirect to correct page
-    Ok(Redirect::to(&format!(
-        "/?id={}&email={}",
-        user_info.id, user_info.email
-    )))
+    match Identity::find_by_remote_id(&session.provider, &user_info.id, &state.db).await? {
+        Some(identity) => {
+            info!(user.id = identity.user_id, "found existing user");
+            session.into_authenticated(identity.user_id);
+
+            // TODO: redirect to initial request or default page
+
+            Ok(Redirect::to(state.frontend_url.as_str()))
+        }
+        None => {
+            info!("user does not yet exist");
+            session.into_registration_needed(user_info.id, user_info.email);
+
+            Ok(Redirect::to(state.frontend_url.join("/signup").as_str()))
+        }
+    }
 }
 
 /// Params for an OAuth2 authorization code callback as defined by
