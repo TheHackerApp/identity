@@ -7,6 +7,7 @@ use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::sync::Arc;
+use time::OffsetDateTime;
 use tokio::sync::RwLock;
 use tracing::{debug, warn};
 
@@ -87,12 +88,22 @@ impl Session {
         };
         data.extend_from_slice(&signature);
 
+        let (expiry, max_age) = {
+            let nanos = self.expiry.timestamp_nanos() as i128;
+            let expiry =
+                OffsetDateTime::from_unix_timestamp_nanos(nanos).expect("timestamp must be valid");
+            let max_age = expiry - OffsetDateTime::now_utc();
+            (expiry, max_age)
+        };
+
         Some(
             Cookie::build(COOKIE_NAME, BASE64_URL_SAFE_NO_PAD.encode(data))
                 .http_only(true)
                 .same_site(SameSite::Lax)
                 .secure(settings.secure)
                 .domain(settings.domain.clone())
+                .expires(expiry)
+                .max_age(max_age)
                 .path("/")
                 .finish(),
         )
