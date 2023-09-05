@@ -1,13 +1,6 @@
 use super::{base::Mutable, InvalidSessionState, SessionState};
-use crate::{
-    session::{OAuthState, Session},
-    state::FrontendUrl,
-};
-use axum::{
-    async_trait,
-    extract::{FromRef, FromRequestParts},
-    http::request::Parts,
-};
+use crate::session::{OAuthState, Session};
+use axum::{async_trait, extract::FromRequestParts, http::request::Parts};
 use tokio::sync::OwnedRwLockWriteGuard;
 use tracing::debug;
 
@@ -47,7 +40,6 @@ impl std::ops::Deref for OAuthSession {
 impl<S> FromRequestParts<S> for OAuthSession
 where
     S: Send + Sync,
-    FrontendUrl: FromRef<S>,
 {
     type Rejection = InvalidSessionState;
 
@@ -58,7 +50,7 @@ where
             SessionState::OAuth(_) => Ok(OAuthSession(session.0)),
             session => {
                 debug!("invalid session state, expected oauth");
-                Err(InvalidSessionState::from(state, session))
+                Err(InvalidSessionState::from(session))
             }
         }
     }

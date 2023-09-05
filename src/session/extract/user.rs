@@ -1,5 +1,4 @@
 use super::{base::HasSessionState, InvalidSessionState, Mutable, SessionState};
-use crate::state::FrontendUrl;
 use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
@@ -63,7 +62,6 @@ where
     T: HasSessionState + FromRequestParts<S> + Send + Debug,
     <T as FromRequestParts<S>>::Rejection: Debug,
     S: Send + Sync,
-    FrontendUrl: FromRef<S>,
     PgPool: FromRef<S>,
 {
     type Rejection = CurrentUserRejection;
@@ -75,7 +73,7 @@ where
         let id = session
             .state()
             .id()
-            .ok_or_else(|| InvalidSessionState::from(state, &session.state()))?;
+            .ok_or_else(|| InvalidSessionState::from(&session.state()))?;
 
         let user = User::find(id, &db)
             .await?

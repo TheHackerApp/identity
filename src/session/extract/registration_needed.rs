@@ -1,10 +1,6 @@
 use super::{base::HasSessionState, Immutable, InvalidSessionState, Mutable, SessionState};
-use crate::{session::RegistrationNeededState, state::FrontendUrl};
-use axum::{
-    async_trait,
-    extract::{FromRef, FromRequestParts},
-    http::request::Parts,
-};
+use crate::session::RegistrationNeededState;
+use axum::{async_trait, extract::FromRequestParts, http::request::Parts};
 use std::fmt::Debug;
 use tracing::debug;
 
@@ -44,7 +40,6 @@ where
     T: HasSessionState + FromRequestParts<S> + Debug,
     <T as FromRequestParts<S>>::Rejection: Debug,
     S: Send + Sync,
-    FrontendUrl: FromRef<S>,
     RegistrationNeededSession<T>: From<T>,
 {
     type Rejection = InvalidSessionState;
@@ -56,7 +51,7 @@ where
             SessionState::RegistrationNeeded(_) => Ok(session.into()),
             session => {
                 debug!("invalid session state, expected registration needed");
-                Err(InvalidSessionState::from(state, session))
+                Err(InvalidSessionState::from(session))
             }
         }
     }

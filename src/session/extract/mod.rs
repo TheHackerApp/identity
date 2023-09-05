@@ -1,10 +1,9 @@
 use super::SessionState;
-use crate::state::FrontendUrl;
 use axum::{
-    extract::FromRef,
-    response::{IntoResponse, Redirect, Response},
+    http::StatusCode,
+    response::{IntoResponse, Json, Response},
 };
-use url::Url;
+use serde::Serialize;
 
 mod base;
 mod oauth;
@@ -20,28 +19,30 @@ pub use user::CurrentUser;
 
 /// A rejection generated when the requested session state did not match the
 /// provided session state.
-#[derive(Debug)]
-pub struct InvalidSessionState(Url);
+#[derive(Debug, Serialize)]
+pub struct InvalidSessionState {
+    #[serde(skip)]
+    status: StatusCode,
+    message: &'static str,
+}
 
 impl InvalidSessionState {
     /// Create a rejection from the app state and a session
-    fn from<S>(state: &S, session: &SessionState) -> Self
-    where
-        FrontendUrl: FromRef<S>,
-    {
-        let path = match session {
-            SessionState::Unauthenticated | SessionState::OAuth(_) => "/login",
-            SessionState::RegistrationNeeded(_) => "/signup",
-            SessionState::Authenticated(_) => "/",
+    fn from(session: &SessionState) -> Self {
+        let (status, message) = match session {
+            SessionState::Unauthenticated | SessionState::OAuth(_) => {
+                (StatusCode::UNAUTHORIZED, "unauthorized")
+            }
+            SessionState::RegistrationNeeded(_) => (StatusCode::FORBIDDEN, "registration required"),
+            SessionState::Authenticated(_) => (StatusCode::FORBIDDEN, "forbidden"),
         };
 
-        let base = FrontendUrl::from_ref(state);
-        Self(base.join(path))
+        Self { status, message }
     }
 }
 
 impl IntoResponse for InvalidSessionState {
     fn into_response(self) -> Response {
-        Redirect::to(self.0.as_str()).into_response()
+        (self.status, Json(self)).into_response()
     }
 }
