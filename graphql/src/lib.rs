@@ -1,6 +1,5 @@
 use async_graphql::{extensions::Analyzer, EmptySubscription, Schema as BaseSchema};
 
-mod logging;
 mod mutation;
 mod query;
 
@@ -13,7 +12,7 @@ pub type Schema = BaseSchema<Query, Mutation, EmptySubscription>;
 /// Build the schema with the necessary extensions
 pub fn schema() -> Schema {
     Schema::build(Query, Mutation::default(), EmptySubscription)
-        .extension(logging::Logging)
+        .extension(logging::GraphQL)
         .extension(Analyzer)
         .finish()
 }
