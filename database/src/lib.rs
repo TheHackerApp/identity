@@ -11,11 +11,15 @@ use std::{
 use tracing::{info, instrument, log::LevelFilter};
 
 mod identity;
+mod organizer;
+mod participant;
 mod provider;
 mod types;
 mod user;
 
 pub use identity::Identity;
+pub use organizer::Organizer;
+pub use participant::Participant;
 pub use provider::{Provider, ProviderConfiguration};
 pub use sqlx::PgPool;
 pub use types::Json;
