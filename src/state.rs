@@ -1,4 +1,4 @@
-use super::oauth;
+use crate::{oauth, session};
 use axum::extract::FromRef;
 use database::PgPool;
 use std::sync::Arc;
@@ -12,16 +12,23 @@ pub(crate) struct AppState {
     pub frontend_url: FrontendUrl,
     pub oauth_client: oauth::Client,
     pub schema: graphql::Schema,
+    pub sessions: session::Manager,
 }
 
 impl AppState {
-    pub fn new(api_url: Url, db: PgPool, frontend_url: Url) -> AppState {
+    pub fn new(
+        api_url: Url,
+        db: PgPool,
+        frontend_url: Url,
+        sessions: session::Manager,
+    ) -> AppState {
         AppState {
             api_url: api_url.into(),
             db,
             frontend_url: frontend_url.into(),
             oauth_client: oauth::Client::default(),
             schema: graphql::schema(),
+            sessions,
         }
     }
 }
@@ -47,6 +54,12 @@ impl FromRef<AppState> for oauth::Client {
 impl FromRef<AppState> for PgPool {
     fn from_ref(state: &AppState) -> Self {
         state.db.clone()
+    }
+}
+
+impl FromRef<AppState> for session::Manager {
+    fn from_ref(state: &AppState) -> Self {
+        state.sessions.clone()
     }
 }
 

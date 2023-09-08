@@ -1,7 +1,6 @@
 use axum::{routing::get, Router};
 use database::PgPool;
 use redis::aio::ConnectionManager as RedisConnectionManager;
-use tower::ServiceBuilder;
 use url::Url;
 
 mod handlers;
@@ -19,21 +18,22 @@ pub fn router(
     frontend_url: Url,
     cookie_signing_key: &str,
 ) -> Router {
-    let sessions = session::Layer::new(
+    let sessions = session::Manager::new(
         cache,
         frontend_url.host_str().unwrap(),
         frontend_url.scheme() == "https",
         cookie_signing_key,
     );
 
-    let state = AppState::new(api_url, db, frontend_url);
+    let state = AppState::new(api_url, db, frontend_url, sessions.clone());
 
     Router::new()
+        .route("/context", get(handlers::context))
         .route(
             "/graphql",
             get(handlers::playground).post(handlers::graphql),
         )
-        .nest("/oauth", handlers::oauth())
+        .nest("/oauth", handlers::oauth().layer(session::layer(sessions)))
         .with_state(state)
-        .layer(ServiceBuilder::new().layer(logging::http()).layer(sessions))
+        .layer(logging::http())
 }

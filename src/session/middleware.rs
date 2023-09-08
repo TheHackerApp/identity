@@ -1,11 +1,10 @@
-use super::{store::Store, Handle, Session};
+use super::{Handle, Manager};
 use axum::{
     http::{Request, StatusCode},
     response::{IntoResponse, Response},
 };
 use axum_extra::extract::CookieJar;
 use futures::future::BoxFuture;
-use redis::aio::ConnectionManager as RedisConnectionManager;
 use std::{
     sync::Arc,
     task::{Context, Poll},
@@ -17,55 +16,31 @@ use tracing::{error, info, instrument, Span};
 /// Store and manage sessions
 #[derive(Clone)]
 pub struct SessionLayer {
-    store: Store,
-    settings: Arc<CookieSettings>,
-}
-
-#[derive(Debug)]
-pub(crate) struct CookieSettings {
-    pub domain: String,
-    pub key: String,
-    pub secure: bool,
+    manager: Manager,
 }
 
 impl SessionLayer {
     /// Create a new session layer
-    pub fn new(
-        cache: RedisConnectionManager,
-        domain: &str,
-        secure: bool,
-        signing_key: &str,
-    ) -> Self {
-        let store = Store::new(cache);
-        let settings = Arc::new(CookieSettings {
-            domain: domain.to_owned(),
-            secure,
-            key: signing_key.to_owned(),
-        });
-
-        Self { store, settings }
+    pub(crate) fn new(manager: Manager) -> Self {
+        Self { manager }
     }
 
     /// Load the session by ID or initialize one
     #[instrument(name = "SessionLayer::load_or_create", skip(self))]
-    async fn load_or_create(&self, id: Option<String>) -> Handle {
-        if let Some(id) = id {
-            let session = match self.store.load(&id).await {
-                Ok(session) => session,
-                Err(error) => {
-                    use std::error::Error;
-                    match error.source() {
-                        Some(source) => error!(%error, %source, "failed to load source"),
-                        None => error!(%error, "failed to load source"),
-                    }
-                    None
+    async fn load_or_create(&self, cookies: &CookieJar) -> Handle {
+        let session = match self.manager.load_from_cookie(cookies).await {
+            Ok(session) => session,
+            Err(error) => {
+                use std::error::Error;
+                match error.source() {
+                    Some(source) => error!(%error, %source, "failed to load source"),
+                    None => error!(%error, "failed to load source"),
                 }
-            };
+                None
+            }
+        };
 
-            Arc::new(RwLock::new(session.unwrap_or_default()))
-        } else {
-            Arc::new(RwLock::new(Session::default()))
-        }
+        Arc::new(RwLock::new(session.unwrap_or_default()))
     }
 }
 
@@ -110,8 +85,7 @@ where
 
         Box::pin(async move {
             let jar = CookieJar::from_headers(req.headers());
-            let session = Session::from_cookie(&jar, layer.settings.key.as_bytes());
-            let session = layer.load_or_create(session).await;
+            let session = layer.load_or_create(&jar).await;
 
             {
                 let current = session.read().await;
@@ -130,7 +104,7 @@ where
                 .into_inner();
             session.extend_if_expiring();
 
-            if let Err(error) = layer.store.save(&session).await {
+            if let Err(error) = layer.manager.save(&session).await {
                 use std::error::Error;
 
                 match error.source() {
@@ -141,7 +115,7 @@ where
                 return Ok((StatusCode::INTERNAL_SERVER_ERROR, "internal error").into_response());
             }
 
-            if let Some(cookie) = session.into_cookie(&layer.settings) {
+            if let Some(cookie) = layer.manager.build_cookie(session) {
                 let jar = jar.add(cookie);
 
                 Ok((jar, response).into_response())

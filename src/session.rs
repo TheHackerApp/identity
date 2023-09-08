@@ -4,19 +4,23 @@ use chrono::{DateTime, Duration, Utc};
 use cookie::{Cookie, SameSite};
 use hmac::{Hmac, Mac};
 use rand::RngCore;
+use redis::aio::ConnectionManager;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tokio::sync::RwLock;
-use tracing::{debug, warn};
+use tracing::{debug, instrument, warn};
 
+mod error;
 pub mod extract;
 mod middleware;
 mod store;
 
-use middleware::CookieSettings;
-pub use middleware::SessionLayer as Layer;
+pub use error::Error;
+use error::Result;
+pub use middleware::SessionLayer;
+use store::Store;
 
 /// A shared reference to a session
 pub type Handle = Arc<RwLock<Session>>;
@@ -29,6 +33,11 @@ const COOKIE_SIZE: usize = 96;
 const SERIALIZED_LENGTH: usize = 128;
 /// start position of the signature in the signed cookie
 const SIGNATURE_START_INDEX: usize = 64;
+
+/// Create a new session layer
+pub fn layer(manager: Manager) -> SessionLayer {
+    SessionLayer::new(manager)
+}
 
 /// A request session
 #[derive(Debug, Deserialize, Serialize)]
@@ -46,7 +55,7 @@ pub struct Session {
 
 impl Session {
     /// Generate a session ID from the value stored in the cookie
-    pub(crate) fn compute_id(value: &[u8]) -> String {
+    pub(crate) fn generate_id(value: &[u8]) -> String {
         let hash = blake3::hash(value);
         BASE64_URL_SAFE_NO_PAD.encode(hash.as_bytes())
     }
@@ -74,22 +83,112 @@ impl Session {
             self.expiry = now + Duration::days(3)
         }
     }
+}
 
-    /// Build the session cookie if the cookie value is available
-    pub(crate) fn into_cookie(self, settings: &CookieSettings) -> Option<Cookie<'static>> {
+impl Default for Session {
+    fn default() -> Self {
+        let mut cookie_value = vec![0; 64];
+        rand::thread_rng().fill_bytes(&mut cookie_value);
+
+        Self {
+            id: Self::generate_id(&cookie_value),
+            expiry: Utc::now() + Duration::days(14),
+            state: SessionState::default(),
+            cookie_value: Some(cookie_value),
+        }
+    }
+}
+
+/// Manages user sessions
+#[derive(Clone)]
+pub struct Manager {
+    store: Store,
+    settings: Arc<CookieSettings>,
+}
+
+#[derive(Debug)]
+pub(crate) struct CookieSettings {
+    pub domain: String,
+    pub key: String,
+    pub secure: bool,
+}
+
+impl Manager {
+    /// Create a new session manager
+    pub(crate) fn new(
+        cache: ConnectionManager,
+        domain: &str,
+        secure: bool,
+        signing_key: &str,
+    ) -> Self {
+        let store = Store::new(cache);
+        let settings = Arc::new(CookieSettings {
+            domain: domain.to_owned(),
+            secure,
+            key: signing_key.to_owned(),
+        });
+
+        Self { store, settings }
+    }
+
+    /// Load the session from it's token
+    #[instrument(name = "Manager::load_from_token", skip(self))]
+    pub async fn load_from_token(&self, token: &str) -> Result<Option<Session>> {
+        if token.len() != SERIALIZED_LENGTH {
+            warn!(length = token.len(), "invalid session token length");
+            return Ok(None);
+        }
+
         let mut data = Vec::with_capacity(COOKIE_SIZE);
-        data.extend_from_slice(&self.cookie_value?);
+        if let Err(_) = BASE64_URL_SAFE_NO_PAD.decode_vec(token, &mut data) {
+            warn!("invalid base64 token");
+            return Ok(None);
+        }
+
+        let (value, signature) = data.split_at(SIGNATURE_START_INDEX);
+
+        let mut mac = Hmac::<Sha256>::new_from_slice(self.settings.key.as_bytes())
+            .expect("key must be valid");
+        mac.update(value);
+        if let Err(_) = mac.verify(signature.into()) {
+            warn!("invalid HMAC");
+            return Ok(None);
+        }
+
+        let id = Session::generate_id(value);
+        self.store.load(&id).await
+    }
+
+    /// Load the session from cookies
+    #[instrument(name = "Manager::load_from_cookie", skip_all)]
+    pub async fn load_from_cookie(&self, jar: &CookieJar) -> Result<Option<Session>> {
+        match jar.get(COOKIE_NAME) {
+            Some(cookie) => self.load_from_token(cookie.value()).await,
+            None => Ok(None),
+        }
+    }
+
+    /// Save the session to the store
+    #[instrument(name = "Manager::save", skip_all, fields(session.id = %session.id()))]
+    pub async fn save(&self, session: &Session) -> Result<()> {
+        self.store.save(session).await
+    }
+
+    /// Build a cookie from the session
+    pub fn build_cookie(&self, session: Session) -> Option<Cookie<'static>> {
+        let mut data = Vec::with_capacity(COOKIE_SIZE);
+        data.extend_from_slice(&session.cookie_value?);
 
         let signature = {
-            let mut mac =
-                Hmac::<Sha256>::new_from_slice(settings.key.as_bytes()).expect("key must be valid");
+            let mut mac = Hmac::<Sha256>::new_from_slice(self.settings.key.as_bytes())
+                .expect("key must be valid");
             mac.update(&data);
             mac.finalize().into_bytes()
         };
         data.extend_from_slice(&signature);
 
         let (expiry, max_age) = {
-            let nanos = self.expiry.timestamp_nanos() as i128;
+            let nanos = session.expiry.timestamp_nanos() as i128;
             let expiry =
                 OffsetDateTime::from_unix_timestamp_nanos(nanos).expect("timestamp must be valid");
             let max_age = expiry - OffsetDateTime::now_utc();
@@ -100,51 +199,13 @@ impl Session {
             Cookie::build(COOKIE_NAME, BASE64_URL_SAFE_NO_PAD.encode(data))
                 .http_only(true)
                 .same_site(SameSite::Lax)
-                .secure(settings.secure)
-                .domain(settings.domain.clone())
+                .secure(self.settings.secure)
+                .domain(self.settings.domain.clone())
                 .expires(expiry)
                 .max_age(max_age)
                 .path("/")
                 .finish(),
         )
-    }
-
-    /// Get the session's ID from the cookie, validating the signature
-    pub(crate) fn from_cookie(jar: &CookieJar, signing_key: &[u8]) -> Option<String> {
-        let cookie = jar.get(COOKIE_NAME)?;
-        let signed_value = cookie.value();
-
-        if signed_value.len() != SERIALIZED_LENGTH {
-            warn!(length = signed_value.len(), "invalid session cookie length");
-            return None;
-        }
-
-        let mut data = Vec::with_capacity(COOKIE_SIZE);
-        BASE64_URL_SAFE_NO_PAD
-            .decode_vec(signed_value, &mut data)
-            .ok()?;
-
-        let (value, signature) = data.split_at(SIGNATURE_START_INDEX);
-
-        let mut mac = Hmac::<Sha256>::new_from_slice(signing_key).expect("key must be valid");
-        mac.update(value);
-        mac.verify(signature.into()).ok()?;
-
-        Some(Self::compute_id(value))
-    }
-}
-
-impl Default for Session {
-    fn default() -> Self {
-        let mut cookie_value = vec![0; 64];
-        rand::thread_rng().fill_bytes(&mut cookie_value);
-
-        Self {
-            id: Self::compute_id(&cookie_value),
-            expiry: Utc::now() + Duration::days(14),
-            state: SessionState::default(),
-            cookie_value: Some(cookie_value),
-        }
     }
 }
 
