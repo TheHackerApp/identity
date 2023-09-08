@@ -1441,18 +1441,13 @@ checksum = "76fc44e2588d5b436dbc3c6cf62aef290f90dab6235744a93dfe1cc18f451e2c"
 
 [[package]]
 name = "migrator"
-version = "0.1.0"
+version = "0.2.0"
+source = "registry+ssh://git@ssh.shipyard.rs/wafflehacks/crate-index.git"
+checksum = "547dae3fde9f0ffc5e99539d03f4148958ac4c3862ad3a914a01dc2a5ee7cc4b"
 dependencies = [
  "chrono",
- "clap",
- "color-eyre",
- "database",
- "dotenvy",
- "eyre",
  "hex",
- "logging",
  "sqlx",
- "tokio",
  "tracing",
 ]
 
@@ -3392,12 +3387,12 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "color-eyre",
- "database",
  "dotenvy",
  "eyre",
  "graphql",
  "logging",
  "migrator",
+ "sqlx",
  "tokio",
  "tracing",
 ]
