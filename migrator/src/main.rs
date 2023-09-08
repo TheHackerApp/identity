@@ -1,21 +1,20 @@
 use clap::Parser;
-use common::logging::{OpenTelemetry, OpenTelemetryProtocol};
-use eyre::WrapErr;
+use eyre::{eyre, WrapErr};
+use logging::OpenTelemetryProtocol;
 use tracing::{debug, Level};
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
     color_eyre::install()?;
-    common::dotenv()?;
+    dotenv()?;
 
     let config = Config::parse();
-    common::logging::init(
-        config.log_level,
-        OpenTelemetry::new(
-            config.opentelemetry_endpoint.as_deref(),
-            config.opentelemetry_protocol,
-        ),
-    )?;
+
+    let mut logging = logging::config().default_directive(config.log_level);
+    if let Some(endpoint) = &config.opentelemetry_endpoint {
+        logging = logging.opentelemetry(config.opentelemetry_protocol, endpoint);
+    }
+    logging.init()?;
 
     debug!(?config);
 
@@ -48,8 +47,30 @@ struct Config {
     #[arg(
     long,
     default_value = "grpc",
-    value_parser = common::logging::opentelemetry_protocol_parser,
+    value_parser = opentelemetry_protocol_parser,
     env = "OTEL_EXPORTER_OTLP_PROTOCOL",
     )]
     opentelemetry_protocol: OpenTelemetryProtocol,
+}
+
+/// Load environment variables from a .env file, if it exists.
+fn dotenv() -> eyre::Result<()> {
+    if let Err(error) = dotenvy::dotenv() {
+        if !error.not_found() {
+            return Err(error).wrap_err("failed to load .env");
+        }
+    }
+
+    Ok(())
+}
+
+/// Parse the OpenTelemetry protocol from a command line argument
+pub fn opentelemetry_protocol_parser(raw: &str) -> eyre::Result<OpenTelemetryProtocol> {
+    match raw.to_lowercase().as_str() {
+        "grpc" => Ok(OpenTelemetryProtocol::Grpc),
+        "http" | "http/protobuf" => Ok(OpenTelemetryProtocol::HttpBinary),
+        _ => Err(eyre!(
+            "invalid exporter protocol, must be one of: 'grpc' or 'http/protobuf'"
+        )),
+    }
 }

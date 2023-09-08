@@ -5,7 +5,6 @@ use tower::ServiceBuilder;
 use url::Url;
 
 mod handlers;
-mod logging;
 mod oauth;
 mod session;
 mod state;
@@ -36,9 +35,5 @@ pub fn router(
         )
         .nest("/oauth", handlers::oauth())
         .with_state(state)
-        .layer(
-            ServiceBuilder::new()
-                .layer(logging::layer())
-                .layer(sessions),
-        )
+        .layer(ServiceBuilder::new().layer(logging::http()).layer(sessions))
 }

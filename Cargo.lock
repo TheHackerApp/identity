@@ -564,20 +564,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "common"
-version = "0.1.0"
-dependencies = [
- "dotenvy",
- "eyre",
- "opentelemetry",
- "opentelemetry-otlp",
- "tracing",
- "tracing-error",
- "tracing-opentelemetry",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "const-oid"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1261,14 +1247,15 @@ dependencies = [
  "chrono",
  "clap",
  "color-eyre",
- "common",
  "cookie",
  "database",
+ "dotenvy",
  "eyre",
  "form_urlencoded",
  "futures",
  "graphql",
  "hmac",
+ "logging",
  "rand",
  "redis",
  "reqwest",
@@ -1278,10 +1265,8 @@ dependencies = [
  "time 0.3.28",
  "tokio",
  "tower",
- "tower-http",
  "tracing",
  "url",
- "uuid",
 ]
 
 [[package]]
@@ -1406,6 +1391,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 
 [[package]]
+name = "logging"
+version = "0.1.2"
+source = "registry+ssh://git@ssh.shipyard.rs/wafflehacks/crate-index.git"
+checksum = "6dfb6c86739048514aba52b6f26befc23b7b6f1b4e315e2f15272ac9cd452778"
+dependencies = [
+ "eyre",
+ "http",
+ "opentelemetry",
+ "opentelemetry-otlp",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-error",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "matchers"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1442,10 +1446,11 @@ dependencies = [
  "chrono",
  "clap",
  "color-eyre",
- "common",
  "database",
+ "dotenvy",
  "eyre",
  "hex",
+ "logging",
  "sqlx",
  "tokio",
  "tracing",
@@ -2913,7 +2918,6 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
- "uuid",
 ]
 
 [[package]]
@@ -3388,10 +3392,11 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "color-eyre",
- "common",
  "database",
+ "dotenvy",
  "eyre",
  "graphql",
+ "logging",
  "migrator",
  "tokio",
  "tracing",

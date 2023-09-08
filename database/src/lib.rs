@@ -8,7 +8,7 @@ use std::{
     str::FromStr,
     time::Duration,
 };
-use tracing::{error, info, instrument, log::LevelFilter};
+use tracing::{info, instrument, log::LevelFilter};
 
 mod identity;
 mod provider;
@@ -78,8 +78,8 @@ impl async_graphql::ErrorExtensions for Error {
         use std::error::Error as _;
 
         match self.source() {
-            Some(e) => error!(error = %self.0, source = %e, "unexpected database error"),
-            None => error!(error = %self.0, "unexpected database error"),
+            Some(e) => tracing::error!(error = %self.0, source = %e, "unexpected database error"),
+            None => tracing::error!(error = %self.0, "unexpected database error"),
         }
 
         async_graphql::Error::new("internal server error")

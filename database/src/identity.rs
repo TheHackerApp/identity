@@ -10,10 +10,10 @@ pub struct Identity {
     /// The provider the identity corresponds to
     pub provider: String,
     /// The user the identity is linked to
-    #[graphql(skip)]
+    #[cfg_attr(feature = "graphql", graphql(skip))]
     pub user_id: i32,
     /// The user's ID as given by the provider
-    #[graphql(skip)]
+    #[cfg_attr(feature = "graphql", graphql(skip))]
     pub remote_id: String,
     /// The email associated with the identity
     pub email: String,

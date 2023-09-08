@@ -1,4 +1,6 @@
-use crate::{Identity, Result};
+#[cfg(feature = "graphql")]
+use crate::Identity;
+use crate::Result;
 #[cfg(feature = "graphql")]
 use async_graphql::{ComplexObject, Context, ResultExt};
 use chrono::{DateTime, Utc};
