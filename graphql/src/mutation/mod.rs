@@ -1,11 +1,15 @@
 use async_graphql::{MergedObject, SimpleObject};
 
 mod identity;
+mod organizer;
+mod participant;
 mod providers;
 mod user;
 mod validators;
 
 use identity::IdentityMutation;
+use organizer::OrganizerMutation;
+use participant::ParticipantMutation;
 use providers::ProviderMutation;
 use user::UserMutation;
 
@@ -14,7 +18,13 @@ use user::UserMutation;
 /// To improve readability, the mutation implementations are split into different files, but all
 /// attached to this one struct.
 #[derive(Default, MergedObject)]
-pub struct Mutation(IdentityMutation, ProviderMutation, UserMutation);
+pub struct Mutation(
+    IdentityMutation,
+    OrganizerMutation,
+    ParticipantMutation,
+    ProviderMutation,
+    UserMutation,
+);
 
 /// Represents and error in the input of a mutation
 #[derive(Debug, SimpleObject)]

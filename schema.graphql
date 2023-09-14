@@ -1,5 +1,55 @@
 directive @oneOf on INPUT_OBJECT
 
+"""
+Input for adding a user to an event
+"""
+input AddUserToEventInput {
+	"""
+	The slug of the event to add the user to
+	"""
+	event: String!
+	"""
+	The ID of the user to add
+	"""
+	userId: Int!
+}
+
+type AddUserToEventResult {
+	"""
+	The user that was added to the event
+	"""
+	user: User
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
+Input for adding a user to an organization
+"""
+input AddUserToOrganizationInput {
+	"""
+	The ID of the organization to add the user to
+	"""
+	organizationId: Int!
+	"""
+	The ID of the user to add
+	"""
+	userId: Int!
+}
+
+type AddUserToOrganizationResult {
+	"""
+	The user that was added to the organization
+	"""
+	user: User
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
 
 """
 Input fields for creating a provider
@@ -46,6 +96,56 @@ type DeleteProviderResult {
 	The slug of the deleted authentication provider
 	"""
 	deletedSlug: String
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
+Input for removing a user from an event
+"""
+input DeleteUserFromEventInput {
+	"""
+	The slug of the event to remove the user from
+	"""
+	event: String!
+	"""
+	The ID of the user to remove
+	"""
+	userId: Int!
+}
+
+type DeleteUserFromEventResult {
+	"""
+	The ID of the user that was removed from the event
+	"""
+	deletedUserId: Int
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
+Input for removing a user from an organization
+"""
+input DeleteUserFromOrganizationInput {
+	"""
+	The ID of the organization to remove the user from
+	"""
+	organizationId: Int!
+	"""
+	The ID of the user to remove
+	"""
+	userId: Int!
+}
+
+type DeleteUserFromOrganizationResult {
+	"""
+	The ID of the user that was removed from the organization
+	"""
+	deletedUserId: Int
 	"""
 	Errors that may have occurred while processing the action
 	"""
@@ -101,6 +201,22 @@ type Mutation {
 	Unlink an authentication provider identity from a user
 	"""
 	unlinkIdentity(input: UnlinkIdentityInput!): UnlinkIdentityResult!
+	"""
+	Add a user to an organization
+	"""
+	addUserToOrganization(input: AddUserToOrganizationInput!): AddUserToOrganizationResult!
+	"""
+	Remove a user from an organization
+	"""
+	deleteUserFromOrganization(input: DeleteUserFromOrganizationInput!): DeleteUserFromOrganizationResult!
+	"""
+	Add a user to an event, as a participant
+	"""
+	addUserToEvent(input: AddUserToEventInput!): AddUserToEventResult!
+	"""
+	Remove a participant from an event
+	"""
+	deleteUserFromEvent(input: DeleteUserFromEventInput!): DeleteUserFromEventResult!
 	"""
 	Add a new authentication provider. The provider will be disabled by default.
 	"""

@@ -97,6 +97,9 @@ impl User {
 
         Ok(identities)
     }
+
+    // TODO: add query for organizations
+    // TODO: add query for events
 }
 
 /// Handles updating individual fields of the user
