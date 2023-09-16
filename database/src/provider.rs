@@ -1,5 +1,6 @@
 use crate::{Json, Result};
 use chrono::{DateTime, Utc};
+use futures::stream::{BoxStream, StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, PgPool, QueryBuilder};
 use std::fmt::{Debug, Formatter};
@@ -121,6 +122,25 @@ impl Provider {
         .fetch_all(db)
         .await?;
         Ok(providers)
+    }
+
+    /// Load all the providers by their slugs, for use in dataloaders
+    pub fn load<'l>(slugs: &[String], db: &'l PgPool) -> BoxStream<'l, Result<Provider>> {
+        query_as!(
+            Provider,
+            r#"
+            SELECT 
+                slug, enabled, name, icon, 
+                config as "config: Json<ProviderConfiguration>", 
+                created_at, updated_at
+            FROM providers
+            WHERE slug = ANY($1)
+            "#,
+            slugs,
+        )
+        .fetch(db)
+        .map_err(Into::into)
+        .boxed()
     }
 
     /// Get a provider by it's slug

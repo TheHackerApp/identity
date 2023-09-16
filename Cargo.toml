@@ -19,7 +19,7 @@ database = { workspace = true }
 dotenvy = "0.15"
 eyre = { workspace = true }
 form_urlencoded = "1.2"
-futures = { version = "0.3", default-features = false, features = ["async-await", "std"] }
+futures = { workspace = true }
 graphql = { workspace = true }
 hmac = "0.12"
 logging = { workspace = true, features = ["http", "opentelemetry"] }
@@ -30,7 +30,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = "0.10"
 time = "0.3"
-tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "signal"] }
+tokio = { workspace = true, features = ["macros", "signal"] }
 tower = { version = "0.4", default-features = false }
 tracing = { workspace = true }
 url = "2.4"
@@ -47,10 +47,12 @@ axum = { version = "0.6", default-features = false }
 chrono = "0.4"
 color-eyre = "0.6"
 eyre = "0.6"
+futures = { version = "0.3", default-features = false, features = ["async-await", "std"] }
 logging = { version = "0.1", registry = "wafflehacks" }
 rand = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tokio = { version = "1", features = ["rt", "rt-multi-thread"] }
 tracing = { version = "0.1", features = ["log"] }
 
 database = { path = "./database" }

@@ -14,8 +14,7 @@ pub fn run(args: Args) -> eyre::Result<()> {
         .open(&args.output)
         .wrap_err("failed to open output")?;
 
-    let sdl = graphql::schema().sdl();
-    output.write_all(sdl.as_bytes())?;
+    output.write_all(graphql::sdl().as_bytes())?;
 
     info!(path = %args.output.display(), "successfully exported schema");
 

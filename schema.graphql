@@ -474,3 +474,16 @@ schema {
 	query: Query
 	mutation: Mutation
 }
+ used to pass representations of entities from external
+services into the root `_entities` field for execution.
+"""
+scalar _Any
+
+type _Service {
+	sdl: String
+}
+
+schema {
+	query: Query
+	mutation: Mutation
+}

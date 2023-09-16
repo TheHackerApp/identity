@@ -24,10 +24,10 @@ impl AppState {
     ) -> AppState {
         AppState {
             api_url: api_url.into(),
-            db,
+            db: db.clone(),
             frontend_url: frontend_url.into(),
             oauth_client: oauth::Client::default(),
-            schema: graphql::schema(),
+            schema: graphql::schema(db),
             sessions,
         }
     }

@@ -4,6 +4,7 @@ use crate::Result;
 #[cfg(feature = "graphql")]
 use async_graphql::{ComplexObject, Context, ResultExt};
 use chrono::{DateTime, Utc};
+use futures::stream::{BoxStream, StreamExt, TryStreamExt};
 use sqlx::{query, query_as, PgPool, QueryBuilder};
 use tracing::instrument;
 
@@ -29,6 +30,14 @@ pub struct User {
 }
 
 impl User {
+    /// Load all the providers by their IDs, for use in dataloaders
+    pub fn load<'l>(ids: &[i32], db: &'l PgPool) -> BoxStream<'l, Result<User>> {
+        query_as!(User, "SELECT * FROM users WHERE id = ANY($1)", ids)
+            .fetch(db)
+            .map_err(Into::into)
+            .boxed()
+    }
+
     /// Get a user by it's ID
     #[instrument(name = "User::find", skip(db))]
     pub async fn find(id: i32, db: &PgPool) -> Result<Option<User>> {
