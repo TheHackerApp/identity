@@ -20,6 +20,10 @@ type AddUserToEventResult {
 	"""
 	user: User
 	"""
+	The event the user was added to
+	"""
+	event: String
+	"""
 	Errors that may have occurred while processing the action
 	"""
 	userErrors: [UserError!]!
@@ -44,6 +48,10 @@ type AddUserToOrganizationResult {
 	The user that was added to the organization
 	"""
 	user: User
+	"""
+	The organization the user was added to
+	"""
+	organization: Int
 	"""
 	Errors that may have occurred while processing the action
 	"""
@@ -96,56 +104,6 @@ type DeleteProviderResult {
 	The slug of the deleted authentication provider
 	"""
 	deletedSlug: String
-	"""
-	Errors that may have occurred while processing the action
-	"""
-	userErrors: [UserError!]!
-}
-
-"""
-Input for removing a user from an event
-"""
-input DeleteUserFromEventInput {
-	"""
-	The slug of the event to remove the user from
-	"""
-	event: String!
-	"""
-	The ID of the user to remove
-	"""
-	userId: Int!
-}
-
-type DeleteUserFromEventResult {
-	"""
-	The ID of the user that was removed from the event
-	"""
-	deletedUserId: Int
-	"""
-	Errors that may have occurred while processing the action
-	"""
-	userErrors: [UserError!]!
-}
-
-"""
-Input for removing a user from an organization
-"""
-input DeleteUserFromOrganizationInput {
-	"""
-	The ID of the organization to remove the user from
-	"""
-	organizationId: Int!
-	"""
-	The ID of the user to remove
-	"""
-	userId: Int!
-}
-
-type DeleteUserFromOrganizationResult {
-	"""
-	The ID of the user that was removed from the organization
-	"""
-	deletedUserId: Int
 	"""
 	Errors that may have occurred while processing the action
 	"""
@@ -208,7 +166,7 @@ type Mutation {
 	"""
 	Remove a user from an organization
 	"""
-	deleteUserFromOrganization(input: DeleteUserFromOrganizationInput!): DeleteUserFromOrganizationResult!
+	removeUserFromOrganization(input: RemoveUserFromOrganizationInput!): RemoveUserFromOrganizationResult!
 	"""
 	Add a user to an event, as a participant
 	"""
@@ -216,7 +174,7 @@ type Mutation {
 	"""
 	Remove a participant from an event
 	"""
-	deleteUserFromEvent(input: DeleteUserFromEventInput!): DeleteUserFromEventResult!
+	removeUserFromEvent(input: RemoveUserFromEventInput!): RemoveUserFromEventResult!
 	"""
 	Add a new authentication provider. The provider will be disabled by default.
 	"""
@@ -286,6 +244,64 @@ type Query {
 	Get a user by their ID
 	"""
 	user(by: UserBy!): User
+}
+
+"""
+Input for removing a user from an event
+"""
+input RemoveUserFromEventInput {
+	"""
+	The slug of the event to remove the user from
+	"""
+	event: String!
+	"""
+	The ID of the user to remove
+	"""
+	userId: Int!
+}
+
+type RemoveUserFromEventResult {
+	"""
+	The ID of the user that was removed from the event
+	"""
+	removedUserId: Int
+	"""
+	The event the user was removed from
+	"""
+	event: String
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
+Input for removing a user from an organization
+"""
+input RemoveUserFromOrganizationInput {
+	"""
+	The ID of the organization to remove the user from
+	"""
+	organizationId: Int!
+	"""
+	The ID of the user to remove
+	"""
+	userId: Int!
+}
+
+type RemoveUserFromOrganizationResult {
+	"""
+	The ID of the user that was removed from the organization
+	"""
+	removedUserId: Int
+	"""
+	The organization the user was removed from
+	"""
+	organization: Int
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
 }
 
 

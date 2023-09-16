@@ -1,18 +1,7 @@
-use super::{results, UserError};
-use async_graphql::{Context, InputObject, Object, Result, ResultExt};
+use super::UserError;
+use async_graphql::{Context, InputObject, Object, Result, ResultExt, SimpleObject};
 use database::{Organizer, PgPool, User};
 use tracing::instrument;
-
-results! {
-    AddUserToOrganizationResult {
-        /// The user that was added to the organization
-        user: User,
-    }
-    DeleteUserFromOrganizationResult {
-        /// The ID of the user that was removed from the organization
-        deleted_user_id: i32,
-    }
-}
 
 #[derive(Default)]
 pub(crate) struct OrganizerMutation;
@@ -38,22 +27,22 @@ impl OrganizerMutation {
             .await
             .extend()?;
 
-        Ok(user.into())
+        Ok((user, input.organization_id).into())
     }
 
     /// Remove a user from an organization
-    #[instrument(name = "Mutation::delete_user_from_organization", skip(self, ctx))]
-    async fn delete_user_from_organization(
+    #[instrument(name = "Mutation::remove_user_from_organization", skip(self, ctx))]
+    async fn remove_user_from_organization(
         &self,
         ctx: &Context<'_>,
-        input: DeleteUserFromOrganizationInput,
-    ) -> Result<DeleteUserFromOrganizationResult> {
+        input: RemoveUserFromOrganizationInput,
+    ) -> Result<RemoveUserFromOrganizationResult> {
         let db = ctx.data::<PgPool>()?;
         Organizer::delete(input.organization_id, input.user_id, db)
             .await
             .extend()?;
 
-        Ok(input.user_id.into())
+        Ok((input.user_id, input.organization_id).into())
     }
 }
 
@@ -66,11 +55,61 @@ struct AddUserToOrganizationInput {
     user_id: i32,
 }
 
+#[derive(Debug, SimpleObject)]
+struct AddUserToOrganizationResult {
+    /// The user that was added to the organization
+    user: Option<User>,
+    /// The organization the user was added to
+    organization: Option<i32>,
+    /// Errors that may have occurred while processing the action
+    user_errors: Vec<UserError>,
+}
+
+impl From<(User, i32)> for AddUserToOrganizationResult {
+    fn from((user, organization): (User, i32)) -> Self {
+        Self {
+            user: Some(user),
+            organization: Some(organization),
+            user_errors: Vec::with_capacity(0),
+        }
+    }
+}
+
+impl From<UserError> for AddUserToOrganizationResult {
+    fn from(user_error: UserError) -> Self {
+        Self {
+            user: None,
+            organization: None,
+            user_errors: vec![user_error],
+        }
+    }
+}
+
 /// Input for removing a user from an organization
 #[derive(Debug, InputObject)]
-struct DeleteUserFromOrganizationInput {
+struct RemoveUserFromOrganizationInput {
     /// The ID of the organization to remove the user from
     organization_id: i32,
     /// The ID of the user to remove
     user_id: i32,
+}
+
+#[derive(Debug, SimpleObject)]
+struct RemoveUserFromOrganizationResult {
+    /// The ID of the user that was removed from the organization
+    removed_user_id: Option<i32>,
+    /// The organization the user was removed from
+    organization: Option<i32>,
+    /// Errors that may have occurred while processing the action
+    user_errors: Vec<UserError>,
+}
+
+impl From<(i32, i32)> for RemoveUserFromOrganizationResult {
+    fn from((user_id, organization): (i32, i32)) -> Self {
+        Self {
+            removed_user_id: Some(user_id),
+            organization: Some(organization),
+            user_errors: Vec::with_capacity(0),
+        }
+    }
 }
