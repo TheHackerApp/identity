@@ -2,7 +2,7 @@ use async_graphql::dataloader::{DataLoader, Loader, NoCache};
 use async_trait::async_trait;
 use database::{PgPool, Provider, User};
 use futures::stream::TryStreamExt;
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 macro_rules! declare_loaders {
     (
@@ -25,7 +25,7 @@ macro_rules! declare_loaders {
             #[async_trait]
             impl Loader<$key_type> for $impl_name {
                 type Value = $model;
-                type Error = Arc<database::Error>;
+                type Error = database::Error;
 
                 async fn load(
                     &self,
@@ -33,7 +33,6 @@ macro_rules! declare_loaders {
                 ) -> Result<HashMap<$key_type, Self::Value>, Self::Error> {
                     Ok(<$model>::load(keys, &self.0)
                         .map_ok(|model| (model.$key.clone(), model))
-                        .map_err(Arc::new)
                         .try_collect()
                         .await?)
                 }

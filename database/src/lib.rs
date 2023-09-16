@@ -6,6 +6,7 @@ use sqlx::{
 use std::{
     fmt::{Debug, Display, Formatter},
     str::FromStr,
+    sync::Arc,
     time::Duration,
 };
 use tracing::{info, instrument, log::LevelFilter};
@@ -46,12 +47,13 @@ pub async fn connect(url: &str) -> eyre::Result<PgPool> {
 }
 
 /// Represents the different way the database can fail
-pub struct Error(sqlx::Error);
+#[derive(Clone)]
+pub struct Error(Arc<sqlx::Error>);
 
 impl Error {
     /// Returns whether the error kind is a violation of a unique/primary key constraint.
     pub fn is_unique_violation(&self) -> bool {
-        match &self.0 {
+        match self.0.as_ref() {
             sqlx::Error::Database(e) => e.is_unique_violation(),
             _ => false,
         }
@@ -92,6 +94,6 @@ impl async_graphql::ErrorExtensions for Error {
 
 impl From<sqlx::Error> for Error {
     fn from(error: sqlx::Error) -> Self {
-        Self(error)
+        Self(Arc::new(error))
     }
 }
