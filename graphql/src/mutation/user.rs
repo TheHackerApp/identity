@@ -1,7 +1,7 @@
 use super::{results, UserError};
-use crate::loaders::UserLoader;
+use crate::loaders::{IdentityForUserLoader, UserLoader};
 use async_graphql::{Context, InputObject, Object, Result, ResultExt};
-use database::{Identity, PgPool, User};
+use database::{PgPool, User};
 use tracing::instrument;
 
 results! {
@@ -51,9 +51,14 @@ impl UserMutation {
             None => return Ok(UserError::new(&["id"], "user does not exist").into()),
         };
 
-        let db = ctx.data_unchecked::<PgPool>();
-        let identities = Identity::for_user(user.id, db).await.extend()?;
         if let Some(primary_email) = &input.primary_email {
+            let loader = ctx.data_unchecked::<IdentityForUserLoader>();
+            let identities = loader
+                .load_one(user.id)
+                .await
+                .extend()?
+                .expect("user must have associated identities");
+
             if !identities.iter().any(|i| &i.email == primary_email) {
                 return Ok(UserError::new(
                     &["primary_email"],
@@ -63,6 +68,7 @@ impl UserMutation {
             }
         }
 
+        let db = ctx.data_unchecked::<PgPool>();
         user.update()
             .override_given_name(input.given_name)
             .override_family_name(input.family_name)

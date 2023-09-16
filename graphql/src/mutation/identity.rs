@@ -1,4 +1,5 @@
 use super::{results, UserError};
+use crate::loaders::IdentityForUserLoader;
 use async_graphql::{Context, InputObject, Object, Result, ResultExt};
 use database::{Identity, PgPool};
 use tracing::instrument;
@@ -24,13 +25,17 @@ impl IdentityMutation {
         ctx: &Context<'_>,
         input: UnlinkIdentityInput,
     ) -> Result<UnlinkIdentityResult> {
-        let db = ctx.data::<PgPool>()?;
-
-        let identities = Identity::for_user(input.user_id, db).await.extend()?;
+        let loader = ctx.data_unchecked::<IdentityForUserLoader>();
+        let identities = loader
+            .load_one(input.user_id)
+            .await
+            .extend()?
+            .expect("user must have at least one identity linked");
         if identities.len() == 1 {
             return Ok(UserError::new(&["provider"], "must have one identity linked").into());
         }
 
+        let db = ctx.data_unchecked::<PgPool>();
         Identity::unlink(&input.provider, input.user_id, db)
             .await
             .extend()?;
