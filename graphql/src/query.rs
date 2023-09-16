@@ -10,7 +10,7 @@ impl Query {
     /// Get all the authentication providers
     #[instrument(name = "Query::providers", skip_all)]
     async fn providers(&self, ctx: &Context<'_>) -> Result<Vec<Provider>> {
-        let db = ctx.data::<PgPool>()?;
+        let db = ctx.data_unchecked::<PgPool>();
         let providers = Provider::all(db).await.extend()?;
 
         Ok(providers)

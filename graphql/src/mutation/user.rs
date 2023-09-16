@@ -84,7 +84,7 @@ impl UserMutation {
     /// Delete a user
     #[instrument(name = "Mutation::delete_user", skip(self, ctx))]
     async fn delete_user(&self, ctx: &Context<'_>, id: i32) -> Result<DeleteUserResult> {
-        let db = ctx.data::<PgPool>()?;
+        let db = ctx.data_unchecked::<PgPool>();
         User::delete(id, db).await.extend()?;
 
         Ok(id.into())

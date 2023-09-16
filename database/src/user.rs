@@ -123,7 +123,7 @@ impl User {
     async fn identities(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Identity>> {
         // TODO: use identities dataloader
 
-        let db = ctx.data::<PgPool>()?;
+        let db = ctx.data_unchecked::<PgPool>();
         let identities = Identity::for_user(self.id, db).await.extend()?;
 
         Ok(identities)
