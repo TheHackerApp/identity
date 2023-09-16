@@ -1,6 +1,8 @@
 use crate::Result;
 use chrono::{DateTime, Utc};
+use futures::stream::TryStreamExt;
 use sqlx::{query, query_as, PgPool};
+use std::collections::HashMap;
 use tracing::instrument;
 
 /// Maps a user to their authentication provider
@@ -24,6 +26,26 @@ pub struct Identity {
 }
 
 impl Identity {
+    /// Load all the identities for a user, for use in dataloaders
+    pub async fn load_for_user(
+        user_ids: &[i32],
+        db: &PgPool,
+    ) -> Result<HashMap<i32, Vec<Identity>>> {
+        let by_user_id = query_as!(
+            Identity,
+            "SELECT * FROM identities WHERE user_id = ANY($1)",
+            user_ids
+        )
+        .fetch(db)
+        .try_fold(HashMap::new(), |mut map, identity| async move {
+            let entry: &mut Vec<Identity> = map.entry(identity.user_id).or_default();
+            entry.push(identity);
+            Ok(map)
+        })
+        .await?;
+        Ok(by_user_id)
+    }
+
     /// Get all the identities associated with a provider
     #[instrument(name = "Identity::for_user", skip(db))]
     pub async fn for_user(user_id: i32, db: &PgPool) -> Result<Vec<Identity>> {

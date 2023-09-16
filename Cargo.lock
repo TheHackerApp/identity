@@ -1016,7 +1016,6 @@ dependencies = [
  "async-graphql",
  "async-trait",
  "database",
- "futures",
  "logging",
  "tokio",
  "tracing",

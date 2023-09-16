@@ -1,9 +1,12 @@
 use crate::{Json, Result};
 use chrono::{DateTime, Utc};
-use futures::stream::{BoxStream, StreamExt, TryStreamExt};
+use futures::stream::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, PgPool, QueryBuilder};
-use std::fmt::{Debug, Formatter};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Formatter},
+};
 use tracing::instrument;
 
 /// Configuration for an authentication provider
@@ -125,8 +128,8 @@ impl Provider {
     }
 
     /// Load all the providers by their slugs, for use in dataloaders
-    pub fn load<'l>(slugs: &[String], db: &'l PgPool) -> BoxStream<'l, Result<Provider>> {
-        query_as!(
+    pub async fn load(slugs: &[String], db: &PgPool) -> Result<HashMap<String, Provider>> {
+        let by_slug = query_as!(
             Provider,
             r#"
             SELECT 
@@ -139,8 +142,10 @@ impl Provider {
             slugs,
         )
         .fetch(db)
-        .map_err(Into::into)
-        .boxed()
+        .map_ok(|provider| (provider.slug.clone(), provider))
+        .try_collect()
+        .await?;
+        Ok(by_slug)
     }
 
     /// Get a provider by it's slug

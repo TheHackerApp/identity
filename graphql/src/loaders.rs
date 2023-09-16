@@ -1,14 +1,19 @@
 use async_graphql::dataloader::{DataLoader, Loader, NoCache};
 use async_trait::async_trait;
-use database::{PgPool, Provider, User};
-use futures::stream::TryStreamExt;
+use database::{Identity, PgPool, Provider, User};
 use std::collections::HashMap;
 
 macro_rules! declare_loader {
     ($creator:ident: $name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty )) => {
-        declare_loader!($creator: $name<$impl_name> for $model => $key($key_type) using load);
+        declare_loader!($creator: $name<$impl_name> for $model => $key($key_type) using load providing $model);
     };
     ($creator:ident:  $name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty ) using $method:ident) => {
+        declare_loader!($creator: $name<$impl_name> for $model => $key($key_type) using $method providing $model);
+    };
+    ($creator:ident: $name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty ) providing $result:ty) => {
+        declare_loader!($creator: $name<$impl_name> for $model => $key($key_type) using load providing $result);
+    };
+    ($creator:ident: $name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty ) using $method:ident providing $result:ty) => {
         #[doc = concat!("Efficiently load [`", stringify!($model), "`]s in GraphQL queries/mutations")]
         pub(crate) type $name = DataLoader<$impl_name, NoCache>;
 
@@ -22,22 +27,20 @@ macro_rules! declare_loader {
 
         #[async_trait]
         impl Loader<$key_type> for $impl_name {
-            type Value = $model;
+            type Value = $result;
             type Error = database::Error;
 
             async fn load(
                 &self,
                 keys: &[$key_type],
             ) -> Result<HashMap<$key_type, Self::Value>, Self::Error> {
-                Ok(<$model>::$method(keys, &self.0)
-                    .map_ok(|model| (model.$key.clone(), model))
-                    .try_collect()
-                    .await?)
+                <$model>::$method(keys, &self.0).await
             }
         }
     };
 }
 
+declare_loader!(identity_for_user: IdentityForUserLoader<IdentityForUserLoaderImpl> for Identity => user_id(i32) using load_for_user providing Vec<Identity>);
 declare_loader!(provider: ProviderLoader<ProviderLoaderImpl> for Provider => slug(String));
 declare_loader!(user: UserLoader<UserLoaderImpl> for User => id(i32));
 declare_loader!(user_by_primary_email: UserByPrimaryEmailLoader<UserByPrimaryEmailLoaderImpl> for User => primary_email(String) using load_by_primary_email);

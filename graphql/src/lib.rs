@@ -21,6 +21,7 @@ fn builder() -> SchemaBuilder<Query, Mutation, EmptySubscription> {
 /// Build the schema with the necessary extensions
 pub fn schema(db: PgPool) -> Schema {
     builder()
+        .data(loaders::identity_for_user(&db))
         .data(loaders::provider(&db))
         .data(loaders::user(&db))
         .data(loaders::user_by_primary_email(&db))

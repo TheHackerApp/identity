@@ -4,8 +4,9 @@ use crate::Result;
 #[cfg(feature = "graphql")]
 use async_graphql::{ComplexObject, Context, ResultExt};
 use chrono::{DateTime, Utc};
-use futures::stream::{BoxStream, StreamExt, TryStreamExt};
+use futures::stream::TryStreamExt;
 use sqlx::{query, query_as, PgPool, QueryBuilder};
+use std::collections::HashMap;
 use tracing::instrument;
 
 /// A user of the service
@@ -31,26 +32,30 @@ pub struct User {
 
 impl User {
     /// Load all the users by their IDs, for use in dataloaders
-    pub fn load<'l>(ids: &[i32], db: &'l PgPool) -> BoxStream<'l, Result<User>> {
-        query_as!(User, "SELECT * FROM users WHERE id = ANY($1)", ids)
+    pub async fn load(ids: &[i32], db: &PgPool) -> Result<HashMap<i32, User>> {
+        let by_id = query_as!(User, "SELECT * FROM users WHERE id = ANY($1)", ids)
             .fetch(db)
-            .map_err(Into::into)
-            .boxed()
+            .map_ok(|user| (user.id, user))
+            .try_collect()
+            .await?;
+        Ok(by_id)
     }
 
     /// Load all the users by their primary emails, for use in dataloaders
-    pub fn load_by_primary_email<'l>(
+    pub async fn load_by_primary_email(
         emails: &[String],
-        db: &'l PgPool,
-    ) -> BoxStream<'l, Result<User>> {
-        query_as!(
+        db: &PgPool,
+    ) -> Result<HashMap<String, User>> {
+        let by_primary_email = query_as!(
             User,
             "SELECT * FROM users WHERE primary_email = ANY($1)",
             emails
         )
         .fetch(db)
-        .map_err(Into::into)
-        .boxed()
+        .map_ok(|user| (user.primary_email.clone(), user))
+        .try_collect()
+        .await?;
+        Ok(by_primary_email)
     }
 
     /// Get a user by it's ID

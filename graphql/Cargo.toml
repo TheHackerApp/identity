@@ -9,7 +9,6 @@ edition = "2021"
 async-graphql = { workspace = true, features = ["dataloader"] }
 async-trait = "0.1"
 database = { workspace = true, features = ["graphql"] }
-futures = { workspace = true }
 logging = { workspace = true, features = ["graphql"] }
 tokio = { workspace = true }
 tracing = { workspace = true }
