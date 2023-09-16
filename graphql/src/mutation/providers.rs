@@ -1,4 +1,5 @@
 use super::{results, validators, UserError};
+use crate::loaders::ProviderLoader;
 use async_graphql::{Context, ErrorExtensions, InputObject, Object, Result, ResultExt};
 use database::{Json, PgPool, Provider, ProviderConfiguration};
 use tracing::instrument;
@@ -52,7 +53,7 @@ impl ProviderMutation {
             return Ok(user_errors.into());
         }
 
-        let db = ctx.data::<PgPool>()?;
+        let db = ctx.data_unchecked::<PgPool>();
         match Provider::create(&input.slug, &input.name, &input.icon, input.config.0, db).await {
             Ok(provider) => Ok(provider.into()),
             Err(e) if e.is_unique_violation() => {
@@ -90,12 +91,13 @@ impl ProviderMutation {
             return Ok(user_errors.into());
         }
 
-        let db = ctx.data::<PgPool>()?;
-        let mut provider = match Provider::find(&input.slug, db).await.extend()? {
+        let loader = ctx.data_unchecked::<ProviderLoader>();
+        let mut provider = match loader.load_one(input.slug).await.extend()? {
             Some(p) => p,
             None => return Ok(UserError::new(&["slug"], "provider does not exist").into()),
         };
 
+        let db = ctx.data_unchecked::<PgPool>();
         provider
             .update()
             .override_enabled(input.enabled)
@@ -116,7 +118,7 @@ impl ProviderMutation {
         ctx: &Context<'_>,
         slug: String,
     ) -> Result<DeleteProviderResult> {
-        let db = ctx.data::<PgPool>()?;
+        let db = ctx.data_unchecked::<PgPool>();
         Provider::delete(&slug, db).await.extend()?;
 
         Ok(slug.into())

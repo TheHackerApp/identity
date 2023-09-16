@@ -1,3 +1,4 @@
+use crate::loaders::ProviderLoader;
 use async_graphql::{Context, Object, OneofObject, Result, ResultExt};
 use database::{PgPool, Provider, User};
 use tracing::instrument;
@@ -18,8 +19,8 @@ impl Query {
     /// Get an authentication provider by it's slug
     #[instrument(name = "Query::provider", skip(self, ctx))]
     async fn provider(&self, ctx: &Context<'_>, slug: String) -> Result<Option<Provider>> {
-        let db = ctx.data::<PgPool>()?;
-        let provider = Provider::find(&slug, db).await.extend()?;
+        let loader = ctx.data_unchecked::<ProviderLoader>();
+        let provider = loader.load_one(slug).await.extend()?;
 
         Ok(provider)
     }
