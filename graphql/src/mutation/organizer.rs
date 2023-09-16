@@ -1,4 +1,5 @@
 use super::UserError;
+use crate::loaders::UserLoader;
 use async_graphql::{Context, InputObject, Object, Result, ResultExt, SimpleObject};
 use database::{Organizer, PgPool, User};
 use tracing::instrument;
@@ -15,14 +16,14 @@ impl OrganizerMutation {
         ctx: &Context<'_>,
         input: AddUserToOrganizationInput,
     ) -> Result<AddUserToOrganizationResult> {
-        let db = ctx.data::<PgPool>()?;
-
         // TODO: ensure organization exists
 
-        let Some(user) = User::find(input.user_id, db).await.extend()? else {
+        let loader = ctx.data_unchecked::<UserLoader>();
+        let Some(user) = loader.load_one(input.user_id).await.extend()? else {
             return Ok(UserError::new(&["user_id"], "user does not exist").into());
         };
 
+        let db = ctx.data_unchecked::<PgPool>();
         Organizer::create(input.organization_id, user.id, db)
             .await
             .extend()?;
@@ -37,7 +38,7 @@ impl OrganizerMutation {
         ctx: &Context<'_>,
         input: RemoveUserFromOrganizationInput,
     ) -> Result<RemoveUserFromOrganizationResult> {
-        let db = ctx.data::<PgPool>()?;
+        let db = ctx.data_unchecked::<PgPool>();
         Organizer::delete(input.organization_id, input.user_id, db)
             .await
             .extend()?;

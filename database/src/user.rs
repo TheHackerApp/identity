@@ -30,12 +30,27 @@ pub struct User {
 }
 
 impl User {
-    /// Load all the providers by their IDs, for use in dataloaders
+    /// Load all the users by their IDs, for use in dataloaders
     pub fn load<'l>(ids: &[i32], db: &'l PgPool) -> BoxStream<'l, Result<User>> {
         query_as!(User, "SELECT * FROM users WHERE id = ANY($1)", ids)
             .fetch(db)
             .map_err(Into::into)
             .boxed()
+    }
+
+    /// Load all the users by their primary emails, for use in dataloaders
+    pub fn load_by_primary_email<'l>(
+        emails: &[String],
+        db: &'l PgPool,
+    ) -> BoxStream<'l, Result<User>> {
+        query_as!(
+            User,
+            "SELECT * FROM users WHERE primary_email = ANY($1)",
+            emails
+        )
+        .fetch(db)
+        .map_err(Into::into)
+        .boxed()
     }
 
     /// Get a user by it's ID

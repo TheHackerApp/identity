@@ -23,6 +23,7 @@ pub fn schema(db: PgPool) -> Schema {
     builder()
         .data(loaders::provider(&db))
         .data(loaders::user(&db))
+        .data(loaders::user_by_primary_email(&db))
         .data(db)
         .finish()
 }

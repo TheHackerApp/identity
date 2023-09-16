@@ -1,4 +1,5 @@
 use super::UserError;
+use crate::loaders::UserLoader;
 use async_graphql::{Context, InputObject, Object, Result, ResultExt, SimpleObject};
 use database::{Participant, PgPool, User};
 use tracing::instrument;
@@ -15,14 +16,14 @@ impl ParticipantMutation {
         ctx: &Context<'_>,
         input: AddUserToEventInput,
     ) -> Result<AddUserToEventResult> {
-        let db = ctx.data::<PgPool>()?;
-
         // TODO: ensure event exists
 
-        let Some(user) = User::find(input.user_id, db).await.extend()? else {
+        let loader = ctx.data_unchecked::<UserLoader>();
+        let Some(user) = loader.load_one(input.user_id).await.extend()? else {
             return Ok(UserError::new(&["user_id"], "user does not exist").into());
         };
 
+        let db = ctx.data_unchecked::<PgPool>();
         Participant::create(&input.event, input.user_id, db)
             .await
             .extend()?;
@@ -37,7 +38,7 @@ impl ParticipantMutation {
         ctx: &Context<'_>,
         input: RemoveUserFromEventInput,
     ) -> Result<RemoveUserFromEventResult> {
-        let db = ctx.data::<PgPool>()?;
+        let db = ctx.data_unchecked::<PgPool>();
         Participant::delete(&input.event, input.user_id, db)
             .await
             .extend()?;

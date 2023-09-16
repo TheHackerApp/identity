@@ -1,4 +1,4 @@
-use crate::loaders::ProviderLoader;
+use crate::loaders::{ProviderLoader, UserByPrimaryEmailLoader, UserLoader};
 use async_graphql::{Context, Object, OneofObject, Result, ResultExt};
 use database::{PgPool, Provider, User};
 use tracing::instrument;
@@ -28,10 +28,15 @@ impl Query {
     /// Get a user by their ID
     #[instrument(name = "Query::user", skip(self, ctx))]
     async fn user(&self, ctx: &Context<'_>, by: UserBy) -> Result<Option<User>> {
-        let db = ctx.data::<PgPool>()?;
         let user = match by {
-            UserBy::Id(id) => User::find(id, db).await,
-            UserBy::PrimaryEmail(email) => User::find_by_primary_email(&email, db).await,
+            UserBy::Id(id) => {
+                let loader = ctx.data_unchecked::<UserLoader>();
+                loader.load_one(id).await
+            }
+            UserBy::PrimaryEmail(email) => {
+                let loader = ctx.data_unchecked::<UserByPrimaryEmailLoader>();
+                loader.load_one(email).await
+            }
         }
         .extend()?;
 
