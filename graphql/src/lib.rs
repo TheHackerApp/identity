@@ -1,4 +1,6 @@
-use async_graphql::{extensions::Analyzer, EmptySubscription, Schema as BaseSchema, SchemaBuilder};
+use async_graphql::{
+    extensions::Analyzer, EmptySubscription, SDLExportOptions, Schema as BaseSchema, SchemaBuilder,
+};
 use database::{loaders, PgPool};
 
 mod mutation;
@@ -31,5 +33,9 @@ pub fn schema(db: PgPool) -> Schema {
 
 /// Export the GraphQL schema
 pub fn sdl() -> String {
-    builder().finish().sdl()
+    let options = SDLExportOptions::new()
+        .federation()
+        .include_specified_by()
+        .compose_directive();
+    builder().finish().sdl_with_options(options)
 }

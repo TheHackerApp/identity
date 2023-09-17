@@ -97,7 +97,7 @@ Implement the DateTime<Utc> scalar
 
 The input/output is a string in RFC3339 format.
 """
-scalar DateTime
+scalar DateTime @specifiedBy(url: "https://datatracker.ietf.org/doc/html/rfc3339")
 
 type DeleteProviderResult {
 	"""
@@ -244,8 +244,6 @@ type Query {
 	Get a user by their ID
 	"""
 	user(by: UserBy!): User
-	_service: _Service!
-	_entities(representations: [_Any!]!): [_Entity]!
 }
 
 """
@@ -409,7 +407,7 @@ type UpdateUserResult {
 """
 A user of the service
 """
-type User {
+type User @key(fields: "id") {
 	"""
 	A unique ID
 	"""
@@ -472,19 +470,10 @@ type UserError {
 	message: String!
 }
 
-"""
-The `_Any` scalar is used to pass representations of entities from external
-services into the root `_entities` field for execution.
-"""
-scalar _Any
+extend schema @link(
+	url: "https://specs.apollo.dev/federation/v2.3",
+	import: ["@key", "@tag", "@shareable", "@inaccessible", "@override", "@external", "@provides", "@requires", "@composeDirective", "@interfaceObject"]
+)
 
-union _Entity = User
-
-type _Service {
-	sdl: String
-}
-
-schema {
-	query: Query
-	mutation: Mutation
-}
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
