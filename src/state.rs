@@ -45,6 +45,12 @@ impl FromRef<AppState> for FrontendUrl {
     }
 }
 
+impl FromRef<AppState> for graphql::Schema {
+    fn from_ref(state: &AppState) -> Self {
+        state.schema.clone()
+    }
+}
+
 impl FromRef<AppState> for oauth::Client {
     fn from_ref(state: &AppState) -> Self {
         state.oauth_client.clone()
