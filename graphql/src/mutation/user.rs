@@ -53,11 +53,10 @@ impl UserMutation {
 
         if let Some(primary_email) = &input.primary_email {
             let loader = ctx.data_unchecked::<IdentityForUserLoader>();
-            let identities = loader
-                .load_one(user.id)
-                .await
-                .extend()?
-                .expect("user must have associated identities");
+            let identities = match loader.load_one(user.id).await.extend()? {
+                Some(identities) => identities,
+                None => return Ok(UserError::new(&["id"], "user registration incomplete").into()),
+            };
 
             if !identities.iter().any(|i| &i.email == primary_email) {
                 return Ok(UserError::new(

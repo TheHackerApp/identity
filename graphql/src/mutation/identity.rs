@@ -26,11 +26,11 @@ impl IdentityMutation {
         input: UnlinkIdentityInput,
     ) -> Result<UnlinkIdentityResult> {
         let loader = ctx.data_unchecked::<IdentityForUserLoader>();
-        let identities = loader
-            .load_one(input.user_id)
-            .await
-            .extend()?
-            .expect("user must have at least one identity linked");
+        let identities = match loader.load_one(input.user_id).await.extend()? {
+            Some(identities) => identities,
+            None => return Ok(UserError::new(&["user_id"], "user does not exist").into()),
+        };
+
         if identities.len() == 1 {
             return Ok(UserError::new(&["provider"], "must have one identity linked").into());
         }
