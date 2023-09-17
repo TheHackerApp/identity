@@ -1,7 +1,6 @@
 use async_graphql::{extensions::Analyzer, EmptySubscription, Schema as BaseSchema, SchemaBuilder};
-use database::PgPool;
+use database::{loaders, PgPool};
 
-mod loaders;
 mod mutation;
 mod query;
 

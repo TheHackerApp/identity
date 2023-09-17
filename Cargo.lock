@@ -727,12 +727,14 @@ name = "database"
 version = "0.1.0"
 dependencies = [
  "async-graphql",
+ "async-trait",
  "chrono",
  "eyre",
  "futures",
  "serde",
  "serde_json",
  "sqlx",
+ "tokio",
  "tracing",
 ]
 
@@ -1014,10 +1016,8 @@ name = "graphql"
 version = "0.1.0"
 dependencies = [
  "async-graphql",
- "async-trait",
  "database",
  "logging",
- "tokio",
  "tracing",
  "url",
 ]

@@ -1,6 +1,8 @@
-use crate::loaders::{ProviderLoader, UserByPrimaryEmailLoader, UserLoader};
 use async_graphql::{Context, Object, OneofObject, Result, ResultExt};
-use database::{PgPool, Provider, User};
+use database::{
+    loaders::{ProviderLoader, UserByPrimaryEmailLoader, UserLoader},
+    PgPool, Provider, User,
+};
 use tracing::instrument;
 
 pub struct Query;

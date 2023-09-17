@@ -1,6 +1,6 @@
+use crate::{Identity, PgPool, Provider, User};
 use async_graphql::dataloader::{DataLoader, Loader, NoCache};
 use async_trait::async_trait;
-use database::{Identity, PgPool, Provider, User};
 use std::collections::HashMap;
 
 macro_rules! declare_loader {
@@ -15,20 +15,20 @@ macro_rules! declare_loader {
     };
     ($creator:ident: $name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty ) using $method:ident providing $result:ty) => {
         #[doc = concat!("Efficiently load [`", stringify!($model), "`]s in GraphQL queries/mutations")]
-        pub(crate) type $name = DataLoader<$impl_name, NoCache>;
+        pub type $name = DataLoader<$impl_name, NoCache>;
 
         #[doc = concat!("Create a new dataloader for [`", stringify!($model), "`]s")]
-        pub(crate) fn $creator(db: &PgPool) -> $name {
+        pub fn $creator(db: &PgPool) -> $name {
             DataLoader::new($impl_name(db.clone()), tokio::task::spawn)
         }
 
         #[doc = concat!("The dataloader implementation for [`", stringify!($model), "`]s")]
-        pub(crate) struct $impl_name(PgPool);
+        pub struct $impl_name(PgPool);
 
         #[async_trait]
         impl Loader<$key_type> for $impl_name {
             type Value = $result;
-            type Error = database::Error;
+            type Error = $crate::Error;
 
             async fn load(
                 &self,

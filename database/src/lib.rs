@@ -12,6 +12,8 @@ use std::{
 use tracing::{info, instrument, log::LevelFilter};
 
 mod identity;
+#[cfg(feature = "graphql")]
+pub mod loaders;
 mod organizer;
 mod participant;
 mod provider;

@@ -1,7 +1,6 @@
 use super::UserError;
-use crate::loaders::UserLoader;
 use async_graphql::{Context, InputObject, Object, Result, ResultExt, SimpleObject};
-use database::{Participant, PgPool, User};
+use database::{loaders::UserLoader, Participant, PgPool, User};
 use tracing::instrument;
 
 #[derive(Default)]

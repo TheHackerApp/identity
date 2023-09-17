@@ -1,7 +1,6 @@
 use super::{results, validators, UserError};
-use crate::loaders::ProviderLoader;
 use async_graphql::{Context, ErrorExtensions, InputObject, Object, Result, ResultExt};
-use database::{Json, PgPool, Provider, ProviderConfiguration};
+use database::{loaders::ProviderLoader, Json, PgPool, Provider, ProviderConfiguration};
 use tracing::instrument;
 
 results! {
