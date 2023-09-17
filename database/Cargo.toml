@@ -7,16 +7,16 @@ edition = "2021"
 
 [dependencies]
 async-graphql = { workspace = true, features = ["dataloader"], optional = true }
-async-trait = "0.1"
+async-trait = { version = "0.1", optional = true }
 chrono = { workspace = true }
 eyre = { workspace = true }
 futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sqlx = { version = "0.7", features = ["chrono", "json", "macros", "postgres", "runtime-tokio", "tls-rustls"] }
-tokio = { workspace = true }
+tokio = { workspace = true, optional = true }
 tracing = { workspace = true }
 
 [features]
 default = []
-graphql = ["async-graphql"]
+graphql = ["async-graphql", "async-trait", "tokio"]
