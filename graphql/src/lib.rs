@@ -13,6 +13,7 @@ pub type Schema = BaseSchema<Query, Mutation, EmptySubscription>;
 /// Create a schema builder with the necessary extensions
 fn builder() -> SchemaBuilder<Query, Mutation, EmptySubscription> {
     Schema::build(Query, Mutation::default(), EmptySubscription)
+        .enable_federation()
         .extension(logging::GraphQL)
         .extension(Analyzer)
 }

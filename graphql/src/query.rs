@@ -44,6 +44,18 @@ impl Query {
 
         Ok(user)
     }
+
+    #[graphql(entity)]
+    #[instrument(name = "Query::user_entity_by_id", skip(self, ctx))]
+    async fn user_entity_by_id(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(key)] id: i32,
+    ) -> Result<Option<User>> {
+        let loader = ctx.data_unchecked::<UserLoader>();
+        let user = loader.load_one(id).await.extend()?;
+        Ok(user)
+    }
 }
 
 /// How to lookup a user

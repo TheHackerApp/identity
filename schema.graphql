@@ -244,6 +244,8 @@ type Query {
 	Get a user by their ID
 	"""
 	user(by: UserBy!): User
+	_service: _Service!
+	_entities(representations: [_Any!]!): [_Entity]!
 }
 
 """
@@ -470,14 +472,13 @@ type UserError {
 	message: String!
 }
 
-schema {
-	query: Query
-	mutation: Mutation
-}
- used to pass representations of entities from external
+"""
+The `_Any` scalar is used to pass representations of entities from external
 services into the root `_entities` field for execution.
 """
 scalar _Any
+
+union _Entity = User
 
 type _Service {
 	sdl: String
