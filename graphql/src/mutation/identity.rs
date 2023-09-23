@@ -1,6 +1,6 @@
 use super::{results, UserError};
 use async_graphql::{Context, InputObject, Object, Result, ResultExt};
-use database::{loaders::IdentityForUserLoader, Identity, PgPool};
+use database::{loaders::IdentitiesForUserLoader, Identity, PgPool};
 use tracing::instrument;
 
 results! {
@@ -24,7 +24,7 @@ impl IdentityMutation {
         ctx: &Context<'_>,
         input: UnlinkIdentityInput,
     ) -> Result<UnlinkIdentityResult> {
-        let loader = ctx.data_unchecked::<IdentityForUserLoader>();
+        let loader = ctx.data_unchecked::<IdentitiesForUserLoader>();
         let identities = match loader.load_one(input.user_id).await.extend()? {
             Some(identities) => identities,
             None => return Ok(UserError::new(&["user_id"], "user does not exist").into()),

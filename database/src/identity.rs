@@ -27,7 +27,7 @@ pub struct Identity {
 
 impl Identity {
     /// Load all the identities for a user, for use in dataloaders
-    pub async fn load_for_user(
+    pub(crate) async fn load_for_user(
         user_ids: &[i32],
         db: &PgPool,
     ) -> Result<HashMap<i32, Vec<Identity>>> {

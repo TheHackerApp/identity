@@ -1,7 +1,7 @@
 use super::{results, UserError};
 use async_graphql::{Context, InputObject, Object, Result, ResultExt};
 use database::{
-    loaders::{IdentityForUserLoader, UserLoader},
+    loaders::{IdentitiesForUserLoader, UserLoader},
     PgPool, User,
 };
 use tracing::instrument;
@@ -54,7 +54,7 @@ impl UserMutation {
         };
 
         if let Some(primary_email) = &input.primary_email {
-            let loader = ctx.data_unchecked::<IdentityForUserLoader>();
+            let loader = ctx.data_unchecked::<IdentitiesForUserLoader>();
             let identities = match loader.load_one(user.id).await.extend()? {
                 Some(identities) => identities,
                 None => return Ok(UserError::new(&["id"], "user registration incomplete").into()),

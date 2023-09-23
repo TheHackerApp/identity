@@ -1,7 +1,7 @@
 use crate::loaders::{EventsForUserLoader, OrganizationsForUserLoader};
 use crate::Result;
 #[cfg(feature = "graphql")]
-use crate::{loaders::IdentityForUserLoader, stubs, Identity};
+use crate::{loaders::IdentitiesForUserLoader, stubs, Identity};
 #[cfg(feature = "graphql")]
 use async_graphql::{ComplexObject, Context, ResultExt};
 use chrono::{DateTime, Utc};
@@ -33,7 +33,7 @@ pub struct User {
 
 impl User {
     /// Load all the users by their IDs, for use in dataloaders
-    pub async fn load(ids: &[i32], db: &PgPool) -> Result<HashMap<i32, User>> {
+    pub(crate) async fn load(ids: &[i32], db: &PgPool) -> Result<HashMap<i32, User>> {
         let by_id = query_as!(User, "SELECT * FROM users WHERE id = ANY($1)", ids)
             .fetch(db)
             .map_ok(|user| (user.id, user))
@@ -43,7 +43,7 @@ impl User {
     }
 
     /// Load all the users by their primary emails, for use in dataloaders
-    pub async fn load_by_primary_email(
+    pub(crate) async fn load_by_primary_email(
         emails: &[String],
         db: &PgPool,
     ) -> Result<HashMap<String, User>> {
@@ -122,7 +122,7 @@ impl User {
     /// The identities the user can login with
     #[instrument(name = "User::identities", skip_all)]
     async fn identities(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Identity>> {
-        let loader = ctx.data_unchecked::<IdentityForUserLoader>();
+        let loader = ctx.data_unchecked::<IdentitiesForUserLoader>();
         let identities = loader.load_one(self.id).await.extend()?.unwrap_or_default();
 
         Ok(identities)

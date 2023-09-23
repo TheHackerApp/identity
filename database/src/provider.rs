@@ -128,7 +128,7 @@ impl Provider {
     }
 
     /// Load all the providers by their slugs, for use in dataloaders
-    pub async fn load(slugs: &[String], db: &PgPool) -> Result<HashMap<String, Provider>> {
+    pub(crate) async fn load(slugs: &[String], db: &PgPool) -> Result<HashMap<String, Provider>> {
         let by_slug = query_as!(
             Provider,
             r#"
