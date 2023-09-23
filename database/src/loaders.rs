@@ -1,29 +1,33 @@
 use crate::{Identity, Organizer, Participant, PgPool, Provider, User};
 use async_graphql::dataloader::{DataLoader, Loader, NoCache};
+use async_graphql::SchemaBuilder;
 use async_trait::async_trait;
 use std::collections::HashMap;
 
 macro_rules! declare_loader {
-    ($creator:ident: $name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty )) => {
-        declare_loader!($creator: $name<$impl_name> for $model => $key($key_type) using load providing $model);
+    ($name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty )) => {
+        declare_loader!($name<$impl_name> for $model => $key($key_type) using load providing $model);
     };
-    ($creator:ident:  $name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty ) using $method:ident) => {
-        declare_loader!($creator: $name<$impl_name> for $model => $key($key_type) using $method providing $model);
+    ($name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty ) using $method:ident) => {
+        declare_loader!($name<$impl_name> for $model => $key($key_type) using $method providing $model);
     };
-    ($creator:ident: $name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty ) providing $result:ty) => {
-        declare_loader!($creator: $name<$impl_name> for $model => $key($key_type) using load providing $result);
+    ($name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty ) providing $result:ty) => {
+        declare_loader!($name<$impl_name> for $model => $key($key_type) using load providing $result);
     };
-    ($creator:ident: $name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty ) using $method:ident providing $result:ty) => {
+    ($name:ident < $impl_name:ident > for $model:ty => $key:ident ( $key_type:ty ) using $method:ident providing $result:ty) => {
         #[doc = concat!("Efficiently load [`", stringify!($model), "`]s in GraphQL queries/mutations")]
         pub type $name = DataLoader<$impl_name, NoCache>;
 
-        #[doc = concat!("Create a new dataloader for [`", stringify!($model), "`]s")]
-        pub fn $creator(db: &PgPool) -> $name {
-            DataLoader::new($impl_name(db.clone()), tokio::task::spawn)
-        }
-
         #[doc = concat!("The dataloader implementation for [`", stringify!($model), "`]s")]
         pub struct $impl_name(PgPool);
+
+        impl $impl_name {
+            #[doc = concat!("Create a new dataloader for [`", stringify!($model), "`]s")]
+            #[inline(always)]
+            fn new(db: &PgPool) -> $name {
+                DataLoader::new($impl_name(db.clone()), tokio::task::spawn)
+            }
+        }
 
         #[async_trait]
         impl Loader<$key_type> for $impl_name {
@@ -40,9 +44,25 @@ macro_rules! declare_loader {
     };
 }
 
-declare_loader!(events_for_user: EventsForUserLoader<EventsForUserLoaderImpl> for Participant => user_id(i32) using load_for_user providing Vec<String>);
-declare_loader!(identity_for_user: IdentityForUserLoader<IdentityForUserLoaderImpl> for Identity => user_id(i32) using load_for_user providing Vec<Identity>);
-declare_loader!(organizations_for_user: OrganizationsForUserLoader<OrganizationsForUserLoaderImpl> for Organizer => user_id(i32) using load_for_user providing Vec<i32>);
-declare_loader!(provider: ProviderLoader<ProviderLoaderImpl> for Provider => slug(String));
-declare_loader!(user: UserLoader<UserLoaderImpl> for User => id(i32));
-declare_loader!(user_by_primary_email: UserByPrimaryEmailLoader<UserByPrimaryEmailLoaderImpl> for User => primary_email(String) using load_by_primary_email);
+declare_loader!(EventsForUserLoader<EventsForUserLoaderImpl> for Participant => user_id(i32) using load_for_user providing Vec<String>);
+declare_loader!(IdentityForUserLoader<IdentityForUserLoaderImpl> for Identity => user_id(i32) using load_for_user providing Vec<Identity>);
+declare_loader!(OrganizationsForUserLoader<OrganizationsForUserLoaderImpl> for Organizer => user_id(i32) using load_for_user providing Vec<i32>);
+declare_loader!(ProviderLoader<ProviderLoaderImpl> for Provider => slug(String));
+declare_loader!(UserLoader<UserLoaderImpl> for User => id(i32));
+declare_loader!(UserByPrimaryEmailLoader<UserByPrimaryEmailLoaderImpl> for User => primary_email(String) using load_by_primary_email);
+
+/// Registers the defined dataloaders
+pub trait RegisterDataLoaders {
+    fn register_dataloaders(self, db: &PgPool) -> Self;
+}
+
+impl<Q, M, S> RegisterDataLoaders for SchemaBuilder<Q, M, S> {
+    fn register_dataloaders(self, db: &PgPool) -> Self {
+        self.data(EventsForUserLoaderImpl::new(db))
+            .data(IdentityForUserLoaderImpl::new(db))
+            .data(OrganizationsForUserLoaderImpl::new(db))
+            .data(ProviderLoaderImpl::new(db))
+            .data(UserLoaderImpl::new(db))
+            .data(UserByPrimaryEmailLoaderImpl::new(db))
+    }
+}
