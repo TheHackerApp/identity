@@ -121,6 +121,13 @@ type DeleteUserResult {
 	userErrors: [UserError!]!
 }
 
+"""
+A reference to an event on the `events` subgraph
+"""
+type Event @key(fields: "slug", resolvable: false) {
+	slug: String!
+}
+
 
 
 """
@@ -195,6 +202,13 @@ type Mutation {
 	Delete a user
 	"""
 	deleteUser(id: Int!): DeleteUserResult!
+}
+
+"""
+A reference to an organization on the `events` subgraph
+"""
+type Organization @key(fields: "id", resolvable: false) {
+	id: Int!
 }
 
 """
@@ -440,6 +454,14 @@ type User @key(fields: "id") {
 	The identities the user can login with
 	"""
 	identities: [Identity!]!
+	"""
+	The organizations the user is part of
+	"""
+	organizations: [Organization!]!
+	"""
+	The events the user has joined
+	"""
+	events: [Event!]!
 }
 
 """

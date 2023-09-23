@@ -1,6 +1,7 @@
+use crate::loaders::{EventsForUserLoader, OrganizationsForUserLoader};
 use crate::Result;
 #[cfg(feature = "graphql")]
-use crate::{loaders::IdentityForUserLoader, Identity};
+use crate::{loaders::IdentityForUserLoader, stubs, Identity};
 #[cfg(feature = "graphql")]
 use async_graphql::{ComplexObject, Context, ResultExt};
 use chrono::{DateTime, Utc};
@@ -127,8 +128,32 @@ impl User {
         Ok(identities)
     }
 
-    // TODO: add query for organizations
-    // TODO: add query for events
+    /// The organizations the user is part of
+    #[instrument(name = "User::organizations", skip_all)]
+    async fn organizations(
+        &self,
+        ctx: &Context<'_>,
+    ) -> async_graphql::Result<Vec<stubs::Organization>> {
+        let loader = ctx.data_unchecked::<OrganizationsForUserLoader>();
+        let organizations = loader.load_one(self.id).await.extend()?.unwrap_or_default();
+
+        Ok(organizations
+            .into_iter()
+            .map(|id| stubs::Organization { id })
+            .collect())
+    }
+
+    /// The events the user has joined
+    #[instrument(name = "User::events", skip_all)]
+    async fn events(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<stubs::Event>> {
+        let loader = ctx.data_unchecked::<EventsForUserLoader>();
+        let events = loader.load_one(self.id).await.extend()?.unwrap_or_default();
+
+        Ok(events
+            .into_iter()
+            .map(|slug| stubs::Event { slug })
+            .collect())
+    }
 }
 
 /// Handles updating individual fields of the user

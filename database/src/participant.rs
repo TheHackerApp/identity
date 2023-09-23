@@ -1,6 +1,8 @@
 use crate::Result;
 use chrono::{DateTime, Utc};
+use futures::stream::TryStreamExt;
 use sqlx::{query, query_as, PgPool};
+use std::collections::HashMap;
 use tracing::instrument;
 
 /// Maps a user to an event as a participant
@@ -17,6 +19,27 @@ pub struct Participant {
 }
 
 impl Participant {
+    /// Load all the event slugs for a user, for use in dataloaders
+    pub(crate) async fn load_for_user(
+        user_ids: &[i32],
+        db: &PgPool,
+    ) -> Result<HashMap<i32, Vec<String>>> {
+        let by_user_id = query_as!(
+            Participant,
+            "SELECT * FROM participants WHERE user_id = ANY($1)",
+            user_ids
+        )
+        .fetch(db)
+        .try_fold(HashMap::new(), |mut map, participant| async move {
+            let entry: &mut Vec<String> = map.entry(participant.user_id).or_default();
+            entry.push(participant.event);
+            Ok(map)
+        })
+        .await?;
+
+        Ok(by_user_id)
+    }
+
     /// Get all the events a user is participating in
     #[instrument(name = "Participant::for_user", skip(db))]
     pub async fn for_user(user_id: i32, db: &PgPool) -> Result<Vec<Participant>> {

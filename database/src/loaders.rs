@@ -1,4 +1,4 @@
-use crate::{Identity, PgPool, Provider, User};
+use crate::{Identity, Organizer, Participant, PgPool, Provider, User};
 use async_graphql::dataloader::{DataLoader, Loader, NoCache};
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -40,7 +40,9 @@ macro_rules! declare_loader {
     };
 }
 
+declare_loader!(events_for_user: EventsForUserLoader<EventsForUserLoaderImpl> for Participant => user_id(i32) using load_for_user providing Vec<String>);
 declare_loader!(identity_for_user: IdentityForUserLoader<IdentityForUserLoaderImpl> for Identity => user_id(i32) using load_for_user providing Vec<Identity>);
+declare_loader!(organizations_for_user: OrganizationsForUserLoader<OrganizationsForUserLoaderImpl> for Organizer => user_id(i32) using load_for_user providing Vec<i32>);
 declare_loader!(provider: ProviderLoader<ProviderLoaderImpl> for Provider => slug(String));
 declare_loader!(user: UserLoader<UserLoaderImpl> for User => id(i32));
 declare_loader!(user_by_primary_email: UserByPrimaryEmailLoader<UserByPrimaryEmailLoaderImpl> for User => primary_email(String) using load_by_primary_email);
