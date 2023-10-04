@@ -1,6 +1,7 @@
 use async_graphql::{Context, Object, OneofObject, Result, ResultExt};
 use database::{
     loaders::{ProviderLoader, UserByPrimaryEmailLoader, UserLoader},
+    stubs::{Event, Organization},
     PgPool, Provider, User,
 };
 use tracing::instrument;
@@ -43,6 +44,18 @@ impl Query {
         .extend()?;
 
         Ok(user)
+    }
+
+    #[graphql(entity)]
+    #[instrument(name = "Query::event_entity_by_slug", skip(self))]
+    async fn event_entity_by_slug(&self, #[graphql(key)] slug: String) -> Option<Event> {
+        Some(Event { slug })
+    }
+
+    #[graphql(entity)]
+    #[instrument(name = "Query::organization_entity_by_id", skip(self))]
+    async fn organization_entity_by_id(&self, #[graphql(key)] id: i32) -> Option<Organization> {
+        Some(Organization { id })
     }
 
     #[graphql(entity)]
