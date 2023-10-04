@@ -1,7 +1,9 @@
-use crate::loaders::{EventsForUserLoader, OrganizationsForUserLoader};
 use crate::Result;
 #[cfg(feature = "graphql")]
-use crate::{loaders::IdentitiesForUserLoader, stubs, Identity};
+use crate::{
+    loaders::{EventsForUserLoader, IdentitiesForUserLoader, OrganizationsForUserLoader},
+    Identity, Organizer, Participant,
+};
 #[cfg(feature = "graphql")]
 use async_graphql::{ComplexObject, Context, ResultExt};
 use chrono::{DateTime, Utc};
@@ -130,29 +132,20 @@ impl User {
 
     /// The organizations the user is part of
     #[instrument(name = "User::organizations", skip_all)]
-    async fn organizations(
-        &self,
-        ctx: &Context<'_>,
-    ) -> async_graphql::Result<Vec<stubs::Organization>> {
+    async fn organizations(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Organizer>> {
         let loader = ctx.data_unchecked::<OrganizationsForUserLoader>();
         let organizations = loader.load_one(self.id).await.extend()?.unwrap_or_default();
 
-        Ok(organizations
-            .into_iter()
-            .map(|id| stubs::Organization { id })
-            .collect())
+        Ok(organizations)
     }
 
     /// The events the user has joined
     #[instrument(name = "User::events", skip_all)]
-    async fn events(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<stubs::Event>> {
+    async fn events(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Participant>> {
         let loader = ctx.data_unchecked::<EventsForUserLoader>();
         let events = loader.load_one(self.id).await.extend()?.unwrap_or_default();
 
-        Ok(events
-            .into_iter()
-            .map(|slug| stubs::Event { slug })
-            .collect())
+        Ok(events)
     }
 }
 

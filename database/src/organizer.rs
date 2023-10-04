@@ -1,4 +1,8 @@
 use crate::Result;
+#[cfg(feature = "graphql")]
+use crate::{loaders::UserLoader, stubs::Organization, User};
+#[cfg(feature = "graphql")]
+use async_graphql::{ComplexObject, Context, ResultExt, SimpleObject};
 use chrono::{DateTime, Utc};
 use futures::stream::TryStreamExt;
 use sqlx::{query, query_as, PgPool};
@@ -7,10 +11,14 @@ use tracing::instrument;
 
 /// Maps a user to an organization as an organizer
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "graphql", derive(SimpleObject))]
+#[cfg_attr(feature = "graphql", graphql(complex))]
 pub struct Organizer {
     /// The organization ID
+    #[cfg_attr(feature = "graphql", graphql(skip))]
     pub organization_id: i32,
     /// The user ID
+    #[cfg_attr(feature = "graphql", graphql(skip))]
     pub user_id: i32,
     /// When the mapping was created
     pub created_at: DateTime<Utc>,
@@ -18,24 +26,48 @@ pub struct Organizer {
     pub updated_at: DateTime<Utc>,
 }
 
+#[cfg(feature = "graphql")]
+#[ComplexObject]
 impl Organizer {
-    /// Load all the organization IDs for a user, for use in dataloaders
+    /// The organization the user is part of
+    async fn organization(&self) -> Organization {
+        Organization {
+            id: self.organization_id,
+        }
+    }
+
+    /// The user that is part of the organization
+    async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
+        let loader = ctx.data_unchecked::<UserLoader>();
+        let user = loader
+            .load_one(self.user_id)
+            .await
+            .extend()?
+            .expect("user must exist");
+
+        Ok(user)
+    }
+}
+
+impl Organizer {
+    /// Load all the organizer info for a user, for use in dataloaders
     pub(crate) async fn load_for_user(
         user_ids: &[i32],
         db: &PgPool,
-    ) -> Result<HashMap<i32, Vec<i32>>> {
+    ) -> Result<HashMap<i32, Vec<Organizer>>> {
         let by_user_id = query_as!(
             Organizer,
             "SELECT * FROM organizers WHERE user_id = ANY($1)",
-            user_ids
+            user_ids,
         )
         .fetch(db)
         .try_fold(HashMap::new(), |mut map, organizer| async move {
-            let entry: &mut Vec<i32> = map.entry(organizer.user_id).or_default();
-            entry.push(organizer.organization_id);
+            let entry: &mut Vec<Organizer> = map.entry(organizer.user_id).or_default();
+            entry.push(organizer);
             Ok(map)
         })
         .await?;
+
         Ok(by_user_id)
     }
 

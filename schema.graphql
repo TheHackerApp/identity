@@ -124,8 +124,12 @@ type DeleteUserResult {
 """
 A reference to an event on the `events` subgraph
 """
-type Event @key(fields: "slug", resolvable: false) {
+type Event @key(fields: "slug") {
 	slug: String!
+	"""
+	The users that are part of the event
+	"""
+	participants: [User!]!
 }
 
 
@@ -207,8 +211,56 @@ type Mutation {
 """
 A reference to an organization on the `events` subgraph
 """
-type Organization @key(fields: "id", resolvable: false) {
+type Organization @key(fields: "id") {
 	id: Int!
+	"""
+	The users that are part of the organization
+	"""
+	members: [Organizer!]!
+}
+
+"""
+Maps a user to an organization as an organizer
+"""
+type Organizer {
+	"""
+	When the mapping was created
+	"""
+	createdAt: DateTime!
+	"""
+	When the mapping was last updated
+	"""
+	updatedAt: DateTime!
+	"""
+	The organization the user is part of
+	"""
+	organization: Organization!
+	"""
+	The user that is part of the organization
+	"""
+	user: User!
+}
+
+"""
+Maps a user to an event as a participant
+"""
+type Participant {
+	"""
+	When the mapping was first created
+	"""
+	createdAt: DateTime!
+	"""
+	When the mapping was last updated
+	"""
+	updatedAt: DateTime!
+	"""
+	The event the user is participating in
+	"""
+	event: Event!
+	"""
+	The user associated with the event
+	"""
+	user: User!
 }
 
 """
@@ -457,11 +509,11 @@ type User @key(fields: "id") {
 	"""
 	The organizations the user is part of
 	"""
-	organizations: [Organization!]!
+	organizations: [Organizer!]!
 	"""
 	The events the user has joined
 	"""
-	events: [Event!]!
+	events: [Participant!]!
 }
 
 """

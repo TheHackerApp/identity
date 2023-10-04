@@ -1,4 +1,8 @@
 use crate::Result;
+#[cfg(feature = "graphql")]
+use crate::{loaders::UserLoader, stubs::Event, User};
+#[cfg(feature = "graphql")]
+use async_graphql::{ComplexObject, Context, ResultExt, SimpleObject};
 use chrono::{DateTime, Utc};
 use futures::stream::TryStreamExt;
 use sqlx::{query, query_as, PgPool};
@@ -7,10 +11,14 @@ use tracing::instrument;
 
 /// Maps a user to an event as a participant
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "graphql", derive(SimpleObject))]
+#[cfg_attr(feature = "graphql", graphql(complex))]
 pub struct Participant {
     /// The event slug
+    #[cfg_attr(feature = "graphql", graphql(skip))]
     pub event: String,
     /// The user ID
+    #[cfg_attr(feature = "graphql", graphql(skip))]
     pub user_id: i32,
     /// When the mapping was first created
     pub created_at: DateTime<Utc>,
@@ -18,12 +26,35 @@ pub struct Participant {
     pub updated_at: DateTime<Utc>,
 }
 
+#[cfg(feature = "graphql")]
+#[ComplexObject]
+impl Participant {
+    /// The event the user is participating in
+    async fn event(&self) -> Event {
+        Event {
+            slug: self.event.clone(),
+        }
+    }
+
+    /// The user associated with the event
+    async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
+        let loader = ctx.data_unchecked::<UserLoader>();
+        let user = loader
+            .load_one(self.user_id)
+            .await
+            .extend()?
+            .expect("user must exist");
+
+        Ok(user)
+    }
+}
+
 impl Participant {
     /// Load all the event slugs for a user, for use in dataloaders
     pub(crate) async fn load_for_user(
         user_ids: &[i32],
         db: &PgPool,
-    ) -> Result<HashMap<i32, Vec<String>>> {
+    ) -> Result<HashMap<i32, Vec<Participant>>> {
         let by_user_id = query_as!(
             Participant,
             "SELECT * FROM participants WHERE user_id = ANY($1)",
@@ -31,8 +62,8 @@ impl Participant {
         )
         .fetch(db)
         .try_fold(HashMap::new(), |mut map, participant| async move {
-            let entry: &mut Vec<String> = map.entry(participant.user_id).or_default();
-            entry.push(participant.event);
+            let entry: &mut Vec<Participant> = map.entry(participant.user_id).or_default();
+            entry.push(participant);
             Ok(map)
         })
         .await?;
