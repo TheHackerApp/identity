@@ -71,6 +71,26 @@ impl Organizer {
         Ok(by_user_id)
     }
 
+    pub(crate) async fn load_for_organization(
+        organization_ids: &[i32],
+        db: &PgPool,
+    ) -> Result<HashMap<i32, Vec<Organizer>>> {
+        let by_organization_id = query_as!(
+            Organizer,
+            "SELECT * FROM organizers WHERE organization_id = ANY($1)",
+            organization_ids
+        )
+        .fetch(db)
+        .try_fold(HashMap::new(), |mut map, organizer| async move {
+            let entry: &mut Vec<Organizer> = map.entry(organizer.organization_id).or_default();
+            entry.push(organizer);
+            Ok(map)
+        })
+        .await?;
+
+        Ok(by_organization_id)
+    }
+
     /// Get all the organizations a user is part of
     #[instrument(name = "Organizer::for_user", skip(db))]
     pub async fn for_user(user_id: i32, db: &PgPool) -> Result<Vec<Organizer>> {

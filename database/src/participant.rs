@@ -71,6 +71,27 @@ impl Participant {
         Ok(by_user_id)
     }
 
+    /// Load all the participants for an event, for use in dataloaders
+    pub(crate) async fn load_for_event(
+        slugs: &[String],
+        db: &PgPool,
+    ) -> Result<HashMap<String, Vec<Participant>>> {
+        let by_event = query_as!(
+            Participant,
+            "SELECT * FROM participants WHERE event = ANY($1)",
+            slugs
+        )
+        .fetch(db)
+        .try_fold(HashMap::new(), |mut map, participant| async move {
+            let entry: &mut Vec<Participant> = map.entry(participant.event.clone()).or_default();
+            entry.push(participant);
+            Ok(map)
+        })
+        .await?;
+
+        Ok(by_event)
+    }
+
     /// Get all the events a user is participating in
     #[instrument(name = "Participant::for_user", skip(db))]
     pub async fn for_user(user_id: i32, db: &PgPool) -> Result<Vec<Participant>> {

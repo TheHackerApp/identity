@@ -129,7 +129,7 @@ type Event @key(fields: "slug") {
 	"""
 	The users that are part of the event
 	"""
-	participants: [User!]!
+	participants: [Participant!]!
 }
 
 

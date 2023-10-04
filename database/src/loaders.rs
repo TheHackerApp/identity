@@ -52,6 +52,8 @@ declare_loader!(OrganizationsForUserLoader<OrganizationsForUserLoaderImpl> for O
 declare_loader!(ProviderLoader<ProviderLoaderImpl> for Provider => slug(String));
 declare_loader!(UserLoader<UserLoaderImpl> for User => id(i32));
 declare_loader!(UserByPrimaryEmailLoader<UserByPrimaryEmailLoaderImpl> for User => primary_email(String) using load_by_primary_email);
+declare_loader!(UsersForEventLoader<UsersForEventLoaderImpl> for Participant => event(String) using load_for_event providing Vec<Participant>);
+declare_loader!(UsersForOrganizationLoader<UsersForOrganizationLoaderImpl> for Organizer => organization_id(i32) using load_for_organization providing Vec<Organizer>);
 
 /// Registers the defined dataloaders
 pub trait RegisterDataLoaders {
@@ -66,5 +68,7 @@ impl<Q, M, S> RegisterDataLoaders for SchemaBuilder<Q, M, S> {
             .data(ProviderLoaderImpl::new(db))
             .data(UserLoaderImpl::new(db))
             .data(UserByPrimaryEmailLoaderImpl::new(db))
+            .data(UsersForEventLoaderImpl::new(db))
+            .data(UsersForOrganizationLoaderImpl::new(db))
     }
 }
