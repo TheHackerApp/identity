@@ -73,7 +73,7 @@ where
         let id = session
             .state()
             .id()
-            .ok_or_else(|| InvalidSessionState::from(&session.state()))?;
+            .ok_or_else(|| InvalidSessionState::from(session.state()))?;
 
         let user = User::find(id, &db)
             .await?

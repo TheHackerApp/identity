@@ -140,7 +140,7 @@ impl Manager {
         }
 
         let mut data = Vec::with_capacity(COOKIE_SIZE);
-        if let Err(_) = BASE64_URL_SAFE_NO_PAD.decode_vec(token, &mut data) {
+        if BASE64_URL_SAFE_NO_PAD.decode_vec(token, &mut data).is_err() {
             warn!("invalid base64 token");
             return Ok(None);
         }
@@ -150,7 +150,7 @@ impl Manager {
         let mut mac = Hmac::<Sha256>::new_from_slice(self.settings.key.as_bytes())
             .expect("key must be valid");
         mac.update(value);
-        if let Err(_) = mac.verify(signature.into()) {
+        if mac.verify(signature.into()).is_err() {
             warn!("invalid HMAC");
             return Ok(None);
         }
@@ -188,7 +188,10 @@ impl Manager {
         data.extend_from_slice(&signature);
 
         let (expiry, max_age) = {
-            let nanos = session.expiry.timestamp_nanos() as i128;
+            let nanos = session
+                .expiry
+                .timestamp_nanos_opt()
+                .expect("timestamp must be valid") as i128;
             let expiry =
                 OffsetDateTime::from_unix_timestamp_nanos(nanos).expect("timestamp must be valid");
             let max_age = expiry - OffsetDateTime::now_utc();
