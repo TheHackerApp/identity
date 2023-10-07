@@ -30,6 +30,7 @@ pub struct Participant {
 #[ComplexObject]
 impl Participant {
     /// The event the user is participating in
+    #[instrument(name = "Participant::event", skip_all, fields(%self.event, %self.user_id))]
     async fn event(&self) -> Event {
         Event {
             slug: self.event.clone(),
@@ -37,6 +38,7 @@ impl Participant {
     }
 
     /// The user associated with the event
+    #[instrument(name = "Participant::user", skip_all, fields(%self.event, %self.user_id))]
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         let loader = ctx.data_unchecked::<UserLoader>();
         let user = loader
@@ -51,6 +53,7 @@ impl Participant {
 
 impl Participant {
     /// Load all the event slugs for a user, for use in dataloaders
+    #[instrument(name = "Participant::load_for_user", skip(db))]
     pub(crate) async fn load_for_user(
         user_ids: &[i32],
         db: &PgPool,
@@ -72,6 +75,7 @@ impl Participant {
     }
 
     /// Load all the participants for an event, for use in dataloaders
+    #[instrument(name = "Participant::load_for_event", skip(db))]
     pub(crate) async fn load_for_event(
         slugs: &[String],
         db: &PgPool,

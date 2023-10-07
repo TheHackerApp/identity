@@ -27,6 +27,7 @@ pub struct Identity {
 
 impl Identity {
     /// Load all the identities for a user, for use in dataloaders
+    #[instrument(name = "Identity::load_for_user", skip(db))]
     pub(crate) async fn load_for_user(
         user_ids: &[i32],
         db: &PgPool,

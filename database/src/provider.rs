@@ -128,6 +128,7 @@ impl Provider {
     }
 
     /// Load all the providers by their slugs, for use in dataloaders
+    #[instrument(name = "Provider::load", skip(db))]
     pub(crate) async fn load(slugs: &[String], db: &PgPool) -> Result<HashMap<String, Provider>> {
         let by_slug = query_as!(
             Provider,

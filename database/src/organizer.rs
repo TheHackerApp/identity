@@ -30,6 +30,7 @@ pub struct Organizer {
 #[ComplexObject]
 impl Organizer {
     /// The organization the user is part of
+    #[instrument(name = "Organizer::organization", skip_all, fields(%self.organization_id, %self.user_id))]
     async fn organization(&self) -> Organization {
         Organization {
             id: self.organization_id,
@@ -37,6 +38,7 @@ impl Organizer {
     }
 
     /// The user that is part of the organization
+    #[instrument(name = "Organizer::user", skip_all, fields(%self.organization_id, %self.user_id))]
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         let loader = ctx.data_unchecked::<UserLoader>();
         let user = loader
@@ -51,6 +53,7 @@ impl Organizer {
 
 impl Organizer {
     /// Load all the organizer info for a user, for use in dataloaders
+    #[instrument(name = "Organizer::load_for_user", skip(db))]
     pub(crate) async fn load_for_user(
         user_ids: &[i32],
         db: &PgPool,
@@ -71,6 +74,8 @@ impl Organizer {
         Ok(by_user_id)
     }
 
+    /// Load all the organizer info for an organization, for use in dataloaders
+    #[instrument(name = "Organizer::load_for_organization")]
     pub(crate) async fn load_for_organization(
         organization_ids: &[i32],
         db: &PgPool,

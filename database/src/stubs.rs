@@ -1,5 +1,7 @@
-use crate::loaders::{UsersForEventLoader, UsersForOrganizationLoader};
-use crate::{Organizer, Participant};
+use crate::{
+    loaders::{UsersForEventLoader, UsersForOrganizationLoader},
+    Organizer, Participant,
+};
 use async_graphql::{ComplexObject, Context, Result, ResultExt, SimpleObject};
 use tracing::instrument;
 
