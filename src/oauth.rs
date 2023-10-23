@@ -9,6 +9,7 @@ use axum::{
 use database::{Identity, PgPool, Provider};
 use serde::Deserialize;
 use tracing::{error, info, instrument, Span};
+use url::Url;
 
 mod client;
 mod error;
@@ -17,24 +18,40 @@ pub(crate) use client::Client;
 use error::{Error, Result};
 
 /// Start the OAuth2 login flow
-#[instrument(name = "oauth::launch", skip_all, fields(%slug))]
+#[instrument(
+    name = "oauth::launch", skip_all,
+    fields(
+        %slug,
+        return_to = params.return_to.as_ref().map(|u| u.as_str()).unwrap_or_default(),
+    )
+)]
 pub(crate) async fn launch(
     Path(slug): Path<String>,
+    Query(params): Query<LaunchParams>,
     session: UnauthenticatedSession<Mutable>,
     State(url): State<ApiUrl>,
     State(client): State<Client>,
     State(db): State<PgPool>,
 ) -> Result<Redirect> {
+    // TODO: validate the return to URL to prevent an open redirect
+
     if let Some(provider) = Provider::find_enabled(&slug, &db).await? {
         let redirect_url = url.join("/oauth/callback");
         let (url, state) = client.build_authorization_url(&provider.config, redirect_url.as_str());
 
-        session.into_oauth(provider.slug, state);
+        session.into_oauth(provider.slug, state, params.return_to);
 
         Ok(Redirect::to(&url))
     } else {
         Err(Error::UnknownProvider)
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) struct LaunchParams {
+    /// The URL to redirect the user back to
+    return_to: Option<Url>,
 }
 
 /// Handle provider redirects and complete the login flow
@@ -46,6 +63,7 @@ pub(crate) async fn launch(
         success = matches!(params.result, CallbackResult::Success { .. }),
         provider.slug = session.provider,
         provider.id,
+        return_to = session.return_to.as_ref().map(|u| u.as_str()).unwrap_or_default(),
     ),
 )]
 pub(crate) async fn callback(
@@ -84,11 +102,17 @@ pub(crate) async fn callback(
     match Identity::find_by_remote_id(&session.provider, &user_info.id, &state.db).await? {
         Some(identity) => {
             info!(user.id = identity.user_id, "found existing user");
+
+            let url = session
+                .return_to
+                .as_ref()
+                .map(|u| u.as_str())
+                .unwrap_or_else(|| state.frontend_url.as_str())
+                .to_owned(); // satisfying the borrow checker :(
+
             session.into_authenticated(identity.user_id);
 
-            // TODO: redirect to initial request or default page
-
-            Ok(Redirect::to(state.frontend_url.as_str()))
+            Ok(Redirect::to(&url))
         }
         None => {
             info!("user does not yet exist");

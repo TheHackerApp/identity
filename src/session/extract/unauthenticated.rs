@@ -2,6 +2,7 @@ use super::{base::HasSessionState, Immutable, InvalidSessionState, Mutable, Sess
 use axum::{async_trait, extract::FromRequestParts, http::request::Parts};
 use std::fmt::Debug;
 use tracing::debug;
+use url::Url;
 
 /// An authenticated session that can initiate an OAuth2 login flow
 #[derive(Debug)]
@@ -11,8 +12,8 @@ where
 
 impl UnauthenticatedSession<Mutable> {
     /// Convert the current session to an in-flight OAuth2 session
-    pub fn into_oauth(mut self, provider: String, state: String) {
-        self.0.state = SessionState::oauth(provider, state);
+    pub fn into_oauth(mut self, provider: String, state: String, return_to: Option<Url>) {
+        self.0.state = SessionState::oauth(provider, state, return_to);
     }
 }
 

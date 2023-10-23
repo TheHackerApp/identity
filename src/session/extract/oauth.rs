@@ -20,7 +20,19 @@ impl OAuthSession {
 
     /// Mark the current session as needing to complete registration
     pub fn into_registration_needed(mut self, id: String, email: String) {
-        self.0.state = SessionState::registration_needed(id, email);
+        // Create a new registration needed state without a return to URL, we'll set the actual
+        // value later to get around the borrow checker
+        let SessionState::OAuth(old_state) = std::mem::replace(
+            &mut self.0.state,
+            SessionState::registration_needed(id, email, None),
+        ) else {
+            unreachable!()
+        };
+
+        match &mut self.0.state {
+            SessionState::RegistrationNeeded(state) => state.return_to = old_state.return_to,
+            _ => unreachable!(),
+        }
     }
 }
 

@@ -11,6 +11,7 @@ use std::sync::Arc;
 use time::OffsetDateTime;
 use tokio::sync::RwLock;
 use tracing::{debug, instrument, warn};
+use url::Url;
 
 mod error;
 pub mod extract;
@@ -249,13 +250,21 @@ impl SessionState {
     }
 
     /// Construct a new OAuth state
-    pub(crate) fn oauth(provider: String, state: String) -> Self {
-        Self::OAuth(OAuthState { provider, state })
+    pub(crate) fn oauth(provider: String, state: String, return_to: Option<Url>) -> Self {
+        Self::OAuth(OAuthState {
+            provider,
+            state,
+            return_to,
+        })
     }
 
     /// Construct a new registration needed state
-    pub(crate) fn registration_needed(id: String, email: String) -> Self {
-        Self::RegistrationNeeded(RegistrationNeededState { id, email })
+    pub(crate) fn registration_needed(id: String, email: String, return_to: Option<Url>) -> Self {
+        Self::RegistrationNeeded(RegistrationNeededState {
+            id,
+            email,
+            return_to,
+        })
     }
 
     /// Construct a new authenticated state
@@ -271,6 +280,8 @@ pub struct OAuthState {
     pub provider: String,
     /// Nonce used to prevent CSRF and clickjacking
     pub state: String,
+    /// Where the user was redirected from
+    pub return_to: Option<Url>,
 }
 
 /// Associated data for a user that needs to complete their registration
@@ -280,6 +291,8 @@ pub struct RegistrationNeededState {
     pub id: String,
     /// The user's primary email
     pub email: String,
+    /// Where the user was redirected from
+    pub return_to: Option<Url>,
 }
 
 /// Associated data for an authenticated user
