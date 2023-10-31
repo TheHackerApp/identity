@@ -24,13 +24,16 @@ impl OAuthSession {
         // value later to get around the borrow checker
         let SessionState::OAuth(old_state) = std::mem::replace(
             &mut self.0.state,
-            SessionState::registration_needed(id, email, None),
+            SessionState::registration_needed(id, email),
         ) else {
             unreachable!()
         };
 
         match &mut self.0.state {
-            SessionState::RegistrationNeeded(state) => state.return_to = old_state.return_to,
+            SessionState::RegistrationNeeded(state) => {
+                state.return_to = old_state.return_to;
+                state.provider = old_state.provider;
+            }
             _ => unreachable!(),
         }
     }

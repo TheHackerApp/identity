@@ -55,6 +55,7 @@ pub(crate) async fn context(
         SessionState::Unauthenticated => UserInfo::Unauthenticated,
         SessionState::OAuth(_) => UserInfo::OAuth,
         SessionState::RegistrationNeeded(state) => UserInfo::RegistrationNeeded {
+            provider: state.provider,
             id: state.id,
             email: state.email,
         },
@@ -94,6 +95,8 @@ pub(crate) enum UserInfo {
     OAuth,
     /// The user needs to complete their registration
     RegistrationNeeded {
+        /// The slug of the provider the user authenticated with
+        provider: String,
         /// The user's ID according to the provider
         id: String,
         /// The user's primary email

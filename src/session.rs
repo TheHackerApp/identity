@@ -259,11 +259,12 @@ impl SessionState {
     }
 
     /// Construct a new registration needed state
-    pub(crate) fn registration_needed(id: String, email: String, return_to: Option<Url>) -> Self {
+    pub(crate) fn registration_needed(id: String, email: String) -> Self {
         Self::RegistrationNeeded(RegistrationNeededState {
             id,
             email,
-            return_to,
+            return_to: None,
+            provider: String::default(),
         })
     }
 
@@ -287,6 +288,8 @@ pub struct OAuthState {
 /// Associated data for a user that needs to complete their registration
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RegistrationNeededState {
+    /// The slug of the provider the user authenticated with
+    pub provider: String,
     /// The user's ID according to the provider
     pub id: String,
     /// The user's primary email
