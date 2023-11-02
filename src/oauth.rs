@@ -14,6 +14,7 @@ use url::Url;
 mod client;
 mod error;
 
+use crate::session::extract::CurrentUser;
 pub(crate) use client::Client;
 use error::{Error, Result};
 
@@ -237,4 +238,14 @@ pub(crate) struct RegistrationForm {
     given_name: String,
     /// The user's family/last name
     family_name: String,
+}
+
+#[instrument(name = "oauth::logout", skip_all, fields(user.id = session.id))]
+pub(crate) async fn logout(
+    session: CurrentUser<Mutable>,
+    State(frontend_url): State<FrontendUrl>,
+) -> Redirect {
+    session.logout();
+
+    Redirect::to(frontend_url.as_str())
 }

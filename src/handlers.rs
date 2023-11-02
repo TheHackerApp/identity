@@ -22,6 +22,7 @@ pub(crate) fn oauth() -> Router<AppState> {
         .route("/launch/:provider", get(oauth::launch))
         .route("/callback", get(oauth::callback))
         .route("/complete-registration", post(oauth::complete_registration))
+        .route("/logout", get(oauth::logout))
 }
 
 /// Handle graphql requests
