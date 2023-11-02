@@ -66,16 +66,6 @@ impl Session {
         &self.id
     }
 
-    /// Get the expiry of the session
-    pub fn expiry(&self) -> DateTime<Utc> {
-        self.expiry
-    }
-
-    /// Check if the session is expired
-    pub fn is_expired(&self) -> bool {
-        self.expiry < Utc::now()
-    }
-
     /// If the session is expiring soon (within 8hrs), extend it another 3 days
     pub(crate) fn extend_if_expiring(&mut self) {
         let now = Utc::now();

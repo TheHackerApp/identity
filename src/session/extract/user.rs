@@ -19,16 +19,6 @@ where
     user: User,
 }
 
-impl<T> CurrentUser<T>
-where
-    T: HasSessionState,
-{
-    /// Get the raw user
-    pub fn into_inner(self) -> User {
-        self.user
-    }
-}
-
 impl CurrentUser<Mutable> {
     /// Logout the current user
     pub fn logout(mut self) {

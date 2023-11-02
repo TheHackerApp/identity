@@ -74,11 +74,6 @@ impl FromRef<AppState> for session::Manager {
 pub(crate) struct ApiUrl(Arc<Url>);
 
 impl ApiUrl {
-    /// Convert the URL to a string slice
-    pub fn as_str(&self) -> &str {
-        self.0.as_str()
-    }
-
     /// Append a path segment to the URL
     pub fn join(&self, path: &str) -> Url {
         self.0.join(path).expect("path must be valid")
