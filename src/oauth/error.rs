@@ -21,6 +21,8 @@ pub(crate) enum Error {
     ProviderResponse(Url),
     /// An error occurred while interacting with the provider
     ProviderInteraction(client::Error),
+    /// The value provided for the parameter was invalid
+    InvalidParameter(&'static str),
 }
 
 impl From<database::Error> for Error {
@@ -59,6 +61,10 @@ impl IntoResponse for Error {
                 }
                 response("internal error", StatusCode::INTERNAL_SERVER_ERROR)
             }
+            Self::InvalidParameter(param) => response(
+                format!("invalid value parameter for {param:?}"),
+                StatusCode::BAD_REQUEST,
+            ),
         }
     }
 }

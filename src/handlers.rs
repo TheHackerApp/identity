@@ -4,7 +4,7 @@ use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
     extract::{Query, State},
     response::{Html, Json},
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use database::{PgPool, User};
@@ -21,6 +21,7 @@ pub(crate) fn oauth() -> Router<AppState> {
     Router::new()
         .route("/launch/:provider", get(oauth::launch))
         .route("/callback", get(oauth::callback))
+        .route("/complete-registration", post(oauth::complete_registration))
 }
 
 /// Handle graphql requests

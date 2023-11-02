@@ -1,12 +1,12 @@
 use crate::{
-    session::extract::{Mutable, OAuthSession, UnauthenticatedSession},
+    session::extract::{Mutable, OAuthSession, RegistrationNeededSession, UnauthenticatedSession},
     state::{ApiUrl, AppState, FrontendUrl},
 };
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Form, Path, Query, State},
     response::Redirect,
 };
-use database::{Identity, PgPool, Provider};
+use database::{Identity, PgPool, Provider, User};
 use serde::Deserialize;
 use tracing::{error, info, instrument, Span};
 use url::Url;
@@ -182,4 +182,59 @@ impl CallbackResult {
             }
         }
     }
+}
+
+#[instrument(name = "oauth::complete_registration", skip(state, session), fields(user.id = session.id))]
+pub(crate) async fn complete_registration(
+    State(state): State<AppState>,
+    session: RegistrationNeededSession<Mutable>,
+    Form(form): Form<RegistrationForm>,
+) -> Result<Redirect> {
+    if form.given_name.is_empty() {
+        return Err(Error::InvalidParameter("given_name"));
+    }
+    if form.family_name.is_empty() {
+        return Err(Error::InvalidParameter("family_name"));
+    }
+
+    let return_to = session
+        .return_to
+        .as_ref()
+        .map(|u| u.as_str())
+        .unwrap_or_else(|| state.frontend_url.as_str())
+        .to_owned(); // satisfying the borrow checker :(
+
+    let maybe_user = User::create(
+        &form.given_name,
+        &form.family_name,
+        &session.email,
+        &state.db,
+    )
+    .await;
+    match maybe_user {
+        Ok(user) => {
+            Identity::link(
+                &session.provider,
+                user.id,
+                &session.id,
+                &session.email,
+                &state.db,
+            )
+            .await?;
+
+            session.into_authenticated(user.id);
+        }
+        Err(e) if e.is_unique_violation() => {}
+        Err(e) => return Err(Error::Database(e)),
+    }
+
+    Ok(Redirect::to(&return_to))
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct RegistrationForm {
+    /// The user's given/first name
+    given_name: String,
+    /// The user's family/last name
+    family_name: String,
 }
