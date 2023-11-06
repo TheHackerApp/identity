@@ -7,8 +7,8 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use context::user::{AuthenticatedContext, Context, Params, RegistrationNeededContext};
 use database::{PgPool, User};
-use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
 mod error;
@@ -45,76 +45,38 @@ pub(crate) async fn playground() -> Html<String> {
 /// Get the user context for the request
 #[instrument(name = "context", skip_all)]
 pub(crate) async fn context(
-    Query(params): Query<ContextParams>,
+    Query(params): Query<Params>,
     State(db): State<PgPool>,
     State(sessions): State<session::Manager>,
-) -> Result<Json<Option<UserInfo>>> {
+) -> Result<Json<Option<Context>>> {
     let Some(session) = sessions.load_from_token(&params.token).await? else {
         return Ok(Json(None));
     };
 
-    let user_info = match session.state {
-        SessionState::Unauthenticated => UserInfo::Unauthenticated,
-        SessionState::OAuth(_) => UserInfo::OAuth,
-        SessionState::RegistrationNeeded(state) => UserInfo::RegistrationNeeded {
-            provider: state.provider,
-            id: state.id,
-            email: state.email,
-        },
+    let context = match session.state {
+        SessionState::Unauthenticated => Context::Unauthenticated,
+        SessionState::OAuth(_) => Context::OAuth,
+        SessionState::RegistrationNeeded(state) => {
+            Context::RegistrationNeeded(RegistrationNeededContext {
+                provider: state.provider,
+                id: state.id,
+                email: state.email,
+            })
+        }
         SessionState::Authenticated(state) => {
             let user = User::find(state.id, &db).await?.expect("user must exist");
 
             // TODO: determine permissions
 
-            UserInfo::Authenticated {
+            Context::Authenticated(AuthenticatedContext {
                 id: user.id,
                 given_name: user.given_name,
                 family_name: user.family_name,
                 email: user.primary_email,
                 is_admin: user.is_admin,
-            }
+            })
         }
     };
 
-    Ok(Json(Some(user_info)))
-}
-
-/// The parameters for fetching the user context
-#[derive(Deserialize)]
-pub(crate) struct ContextParams {
-    /// The session token
-    token: String,
-}
-
-/// The generate user context
-#[derive(Serialize)]
-#[serde(tag = "type", rename_all = "kebab-case")]
-pub(crate) enum UserInfo {
-    /// The user is currently unauthenticated
-    Unauthenticated,
-    /// The user is in the middle of logging in via OAuth
-    #[serde(rename = "oauth")]
-    OAuth,
-    /// The user needs to complete their registration
-    RegistrationNeeded {
-        /// The slug of the provider the user authenticated with
-        provider: String,
-        /// The user's ID according to the provider
-        id: String,
-        /// The user's primary email
-        email: String,
-    },
-    /// The user is fully authenticated
-    Authenticated {
-        /// The user's ID
-        id: i32,
-        /// The user's given/first name
-        given_name: String,
-        /// The user's family/last name
-        family_name: String,
-        /// The user's primary email
-        email: String,
-        /// Whether the user is an admin
-        is_admin: bool,
-    },
+    Ok(Json(Some(context)))
 }

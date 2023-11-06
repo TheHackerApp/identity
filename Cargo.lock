@@ -589,6 +589,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7144d30dcf0fafbce74250a3963025d8d52177934239851c917d29f1df280c2"
 
 [[package]]
+name = "context"
+version = "0.1.0"
+source = "registry+ssh://git@ssh.shipyard.rs/wafflehacks/crate-index.git"
+checksum = "6c60d78a70abc2a59ca748786a7ff284b206183dc61460aee21a3536b034df2b"
+dependencies = [
+ "axum",
+ "headers",
+ "http",
+ "serde",
+]
+
+[[package]]
 name = "cookie"
 version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1277,6 +1289,7 @@ dependencies = [
  "chrono",
  "clap",
  "color-eyre",
+ "context",
  "cookie",
  "database",
  "dotenvy",
