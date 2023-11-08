@@ -45,7 +45,7 @@ pub(crate) async fn playground() -> Html<String> {
 /// Get the user context for the request
 #[instrument(name = "context", skip_all)]
 pub(crate) async fn context(
-    Query(params): Query<Params>,
+    Query(params): Query<Params<'_>>,
     State(db): State<PgPool>,
     State(sessions): State<session::Manager>,
 ) -> Result<Json<Option<Context>>> {
