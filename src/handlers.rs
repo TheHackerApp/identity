@@ -1,4 +1,8 @@
-use crate::{oauth, session, AppState};
+use crate::{
+    oauth,
+    session::{self, SessionState},
+    AppState,
+};
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
@@ -13,7 +17,6 @@ use tracing::instrument;
 
 mod error;
 
-use crate::session::SessionState;
 use error::Result;
 
 /// Create router for handling OAuth
@@ -48,12 +51,14 @@ pub(crate) async fn context(
     Query(params): Query<Params<'_>>,
     State(db): State<PgPool>,
     State(sessions): State<session::Manager>,
-) -> Result<Json<Option<Context>>> {
-    let Some(session) = sessions.load_from_token(&params.token).await? else {
-        return Ok(Json(None));
-    };
+) -> Result<Json<Context>> {
+    let session = sessions
+        .load_from_token(&params.token)
+        .await?
+        .map(|s| s.state)
+        .unwrap_or_default();
 
-    let context = match session.state {
+    let context = match session {
         SessionState::Unauthenticated => Context::Unauthenticated,
         SessionState::OAuth(_) => Context::OAuth,
         SessionState::RegistrationNeeded(state) => {
@@ -78,5 +83,5 @@ pub(crate) async fn context(
         }
     };
 
-    Ok(Json(Some(context)))
+    Ok(Json(context))
 }
