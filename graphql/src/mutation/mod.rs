@@ -28,6 +28,7 @@ pub struct Mutation(
 
 /// Represents and error in the input of a mutation
 #[derive(Debug, SimpleObject)]
+#[graphql(shareable)]
 pub struct UserError {
     /// The path to the input field that caused the error
     field: &'static [&'static str],

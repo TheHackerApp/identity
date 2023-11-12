@@ -122,7 +122,7 @@ type DeleteUserResult {
 }
 
 """
-A reference to an event on the `events` subgraph
+An event that is put on
 """
 type Event @key(fields: "slug") {
 	slug: String!
@@ -209,7 +209,7 @@ type Mutation {
 }
 
 """
-A reference to an organization on the `events` subgraph
+An organization that puts on events
 """
 type Organization @key(fields: "id") {
 	id: Int!
@@ -533,7 +533,7 @@ input UserBy @oneOf {
 """
 Represents and error in the input of a mutation
 """
-type UserError {
+type UserError @shareable {
 	"""
 	The path to the input field that caused the error
 	"""

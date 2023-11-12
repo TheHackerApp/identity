@@ -5,7 +5,7 @@ use crate::{
 use async_graphql::{ComplexObject, Context, Result, ResultExt, SimpleObject};
 use tracing::instrument;
 
-/// A reference to an organization on the `events` subgraph
+/// An organization that puts on events
 #[derive(Debug, SimpleObject)]
 #[graphql(complex)]
 pub struct Organization {
@@ -24,7 +24,7 @@ impl Organization {
     }
 }
 
-/// A reference to an event on the `events` subgraph
+/// An event that is put on
 #[derive(Debug, SimpleObject)]
 #[graphql(complex)]
 pub struct Event {
