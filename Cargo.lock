@@ -590,9 +590,9 @@ checksum = "f7144d30dcf0fafbce74250a3963025d8d52177934239851c917d29f1df280c2"
 
 [[package]]
 name = "context"
-version = "0.2.0"
+version = "0.3.2"
 source = "registry+ssh://git@ssh.shipyard.rs/wafflehacks/crate-index.git"
-checksum = "9fc99a4e74f400d09c742bffdf2966b73b0ad1b4c3366f3d8d9b717893f76718"
+checksum = "24f32924b797aa6bbed5a7f964b67095182e3a3c36d54e7ebc96e26e97710d58"
 dependencies = [
  "axum",
  "headers",
