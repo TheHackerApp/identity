@@ -70,6 +70,22 @@ impl Session {
         &self.id
     }
 
+    /// Generate the token for the session
+    pub fn token(&self, signing_key: &[u8]) -> Option<String> {
+        let cookie_value = self.cookie_value.as_ref()?;
+        let mut data = Vec::with_capacity(COOKIE_SIZE);
+        data.extend_from_slice(cookie_value);
+
+        let signature = {
+            let mut mac = Hmac::<Sha256>::new_from_slice(signing_key).expect("key must be valid");
+            mac.update(&data);
+            mac.finalize().into_bytes()
+        };
+        data.extend_from_slice(&signature);
+
+        Some(BASE64_URL_SAFE_NO_PAD.encode(data))
+    }
+
     /// If the session is expiring soon (within 8hrs), extend it another 3 days
     #[cfg(feature = "server")]
     pub(crate) fn extend_if_expiring(&mut self) {
@@ -167,16 +183,7 @@ impl Manager {
 
     /// Build a cookie from the session
     pub fn build_cookie(&self, session: Session) -> Option<Cookie<'static>> {
-        let mut data = Vec::with_capacity(COOKIE_SIZE);
-        data.extend_from_slice(&session.cookie_value?);
-
-        let signature = {
-            let mut mac = Hmac::<Sha256>::new_from_slice(self.settings.key.as_bytes())
-                .expect("key must be valid");
-            mac.update(&data);
-            mac.finalize().into_bytes()
-        };
-        data.extend_from_slice(&signature);
+        let session_token = session.token(self.settings.key.as_bytes())?;
 
         let (expiry, max_age) = {
             let nanos = session
@@ -190,7 +197,7 @@ impl Manager {
         };
 
         Some(
-            Cookie::build(COOKIE_NAME, BASE64_URL_SAFE_NO_PAD.encode(data))
+            Cookie::build(COOKIE_NAME, session_token)
                 .http_only(true)
                 .same_site(SameSite::Lax)
                 .secure(self.settings.secure)
