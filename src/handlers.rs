@@ -1,8 +1,4 @@
-use crate::{
-    oauth,
-    session::{self, SessionState},
-    AppState,
-};
+use crate::{oauth, AppState};
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
@@ -13,6 +9,7 @@ use axum::{
 };
 use context::user::{AuthenticatedContext, Context, Params, RegistrationNeededContext};
 use database::{PgPool, User};
+use session::SessionState;
 use tracing::instrument;
 
 mod error;

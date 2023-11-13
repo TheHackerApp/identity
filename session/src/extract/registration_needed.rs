@@ -1,5 +1,5 @@
 use super::{base::HasSessionState, Immutable, InvalidSessionState, Mutable, SessionState};
-use crate::session::RegistrationNeededState;
+use crate::RegistrationNeededState;
 use axum::{async_trait, extract::FromRequestParts, http::request::Parts};
 use std::fmt::Debug;
 use tracing::debug;

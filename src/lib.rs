@@ -5,7 +5,6 @@ use url::Url;
 
 mod handlers;
 mod oauth;
-mod session;
 mod state;
 
 pub(crate) use state::AppState;

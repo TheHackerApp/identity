@@ -1,20 +1,19 @@
-use crate::{
-    session::extract::{Mutable, OAuthSession, RegistrationNeededSession, UnauthenticatedSession},
-    state::{ApiUrl, AppState, FrontendUrl},
-};
+use crate::state::{ApiUrl, AppState, FrontendUrl};
 use axum::{
     extract::{Form, Path, Query, State},
     response::Redirect,
 };
 use database::{Identity, PgPool, Provider, User};
 use serde::Deserialize;
+use session::extract::{
+    CurrentUser, Mutable, OAuthSession, RegistrationNeededSession, UnauthenticatedSession,
+};
 use tracing::{error, info, instrument, Span};
 use url::Url;
 
 mod client;
 mod error;
 
-use crate::session::extract::CurrentUser;
 pub(crate) use client::Client;
 use error::{Error, Result};
 

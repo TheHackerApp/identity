@@ -7,39 +7,31 @@ edition = "2021"
 async-graphql = { workspace = true, features = ["playground"] }
 async-graphql-axum = "6.0"
 axum = { workspace = true, features = ["form", "headers", "http1", "http2", "query", "tokio"] }
-axum-extra = { version = "0.8", features = ["cookie"] }
-base64 = "0.21"
-blake3 = "1"
-bytes = "1"
-chrono = { workspace = true, features = ["serde"] }
 clap = { version = "4.3", features = ["derive", "env"] }
 color-eyre.workspace = true
 context = { version = "0.3.2", registry = "wafflehacks" }
-cookie = "0.17"
 database.workspace = true
 dotenvy = "0.15"
 eyre.workspace = true
 form_urlencoded = "1.2"
 futures.workspace = true
 graphql.workspace = true
-hmac = "0.12"
 logging = { workspace = true, features = ["http", "opentelemetry"] }
 rand.workspace = true
-redis = { version = "0.23", default-features = false, features = ["aio", "connection-manager", "tokio-comp"] }
+redis.workspace = true
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
 serde.workspace = true
 serde_json.workspace = true
-sha2 = "0.10"
-time = "0.3"
+session = { workspace = true, features = ["server"] }
 tokio = { workspace = true, features = ["macros", "signal"] }
-tower = { version = "0.4", default-features = false }
 tracing.workspace = true
-url = { version = "2.4", features = ["serde"] }
+url.workspace = true
 
 [workspace]
 members = [
   "database",
   "graphql",
+  "session",
 ]
 
 [workspace.dependencies]
@@ -51,10 +43,13 @@ eyre = "0.6"
 futures = { version = "0.3", default-features = false, features = ["async-await", "std"] }
 logging = { version = "0.1", registry = "wafflehacks" }
 rand = "0.8"
+redis = { version = "0.23", default-features = false, features = ["aio", "connection-manager", "tokio-comp"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["rt", "rt-multi-thread"] }
 tracing = { version = "0.1", features = ["log"] }
+url = "2.4"
 
 database = { path = "./database" }
 graphql = { path = "./graphql" }
+session = { path = "./session" }

@@ -1,5 +1,5 @@
 use super::{base::Mutable, InvalidSessionState, SessionState};
-use crate::session::{OAuthState, Session};
+use crate::{OAuthState, Session};
 use axum::{async_trait, extract::FromRequestParts, http::request::Parts};
 use tokio::sync::OwnedRwLockWriteGuard;
 use tracing::debug;

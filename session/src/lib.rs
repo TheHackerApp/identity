@@ -10,16 +10,19 @@ use sha2::Sha256;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tokio::sync::RwLock;
-use tracing::{debug, instrument, warn};
+use tracing::{instrument, warn};
 use url::Url;
 
 mod error;
+#[cfg(feature = "server")]
 pub mod extract;
+#[cfg(feature = "server")]
 mod middleware;
 mod store;
 
 pub use error::Error;
 use error::Result;
+#[cfg(feature = "server")]
 pub use middleware::SessionLayer;
 use store::Store;
 
@@ -35,6 +38,7 @@ const SERIALIZED_LENGTH: usize = 128;
 /// start position of the signature in the signed cookie
 const SIGNATURE_START_INDEX: usize = 64;
 
+#[cfg(feature = "server")]
 /// Create a new session layer
 pub fn layer(manager: Manager) -> SessionLayer {
     SessionLayer::new(manager)
@@ -67,10 +71,11 @@ impl Session {
     }
 
     /// If the session is expiring soon (within 8hrs), extend it another 3 days
+    #[cfg(feature = "server")]
     pub(crate) fn extend_if_expiring(&mut self) {
         let now = Utc::now();
         if (self.expiry - Duration::hours(8)) < now {
-            debug!("session about to expire, extending");
+            tracing::debug!("session about to expire, extending");
             self.expiry = now + Duration::days(3)
         }
     }
@@ -106,12 +111,7 @@ pub(crate) struct CookieSettings {
 
 impl Manager {
     /// Create a new session manager
-    pub(crate) fn new(
-        cache: ConnectionManager,
-        domain: &str,
-        secure: bool,
-        signing_key: &str,
-    ) -> Self {
+    pub fn new(cache: ConnectionManager, domain: &str, secure: bool, signing_key: &str) -> Self {
         let store = Store::new(cache);
         let settings = Arc::new(CookieSettings {
             domain: domain.to_owned(),
@@ -240,6 +240,7 @@ impl SessionState {
     }
 
     /// Construct a new OAuth state
+    #[cfg(feature = "server")]
     pub(crate) fn oauth(provider: String, state: String, return_to: Option<Url>) -> Self {
         Self::OAuth(OAuthState {
             provider,
@@ -249,6 +250,7 @@ impl SessionState {
     }
 
     /// Construct a new registration needed state
+    #[cfg(feature = "server")]
     pub(crate) fn registration_needed(id: String, email: String) -> Self {
         Self::RegistrationNeeded(RegistrationNeededState {
             id,
@@ -259,6 +261,7 @@ impl SessionState {
     }
 
     /// Construct a new authenticated state
+    #[cfg(feature = "server")]
     pub(crate) fn authenticated(id: i32) -> Self {
         Self::Authenticated(AuthenticatedState { id })
     }

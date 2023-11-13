@@ -1,4 +1,4 @@
-use crate::{oauth, session};
+use crate::oauth;
 use axum::extract::FromRef;
 use database::PgPool;
 use std::sync::Arc;

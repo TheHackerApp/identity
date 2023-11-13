@@ -1,4 +1,4 @@
-use crate::session::{Handle, Session, SessionState};
+use crate::{Handle, Session, SessionState};
 use axum::{async_trait, extract::FromRequestParts, http::request::Parts, Extension};
 use tokio::sync::{OwnedRwLockReadGuard, OwnedRwLockWriteGuard};
 
