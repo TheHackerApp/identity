@@ -4,6 +4,8 @@ use tracing::{debug, Level};
 
 mod export_schema;
 mod migrate;
+mod sessions;
+mod util;
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
@@ -18,6 +20,7 @@ async fn main() -> eyre::Result<()> {
     match args.command {
         Command::ExportSchema(args) => export_schema::run(args),
         Command::Migrate(args) => migrate::run(args).await,
+        Command::Sessions(args) => sessions::run(args).await,
     }
 }
 
@@ -39,6 +42,11 @@ pub enum Command {
     ExportSchema(export_schema::Args),
     /// Manage database migrations
     Migrate(migrate::Args),
+    /// Generate sessions with custom attributes
+    ///
+    /// All session types, except for OAuth, can be created. An OAuth session cannot created due to
+    /// its integration with 3rd-parties.
+    Sessions(sessions::Args),
 }
 
 /// Load environment variables from a .env file, if it exists.

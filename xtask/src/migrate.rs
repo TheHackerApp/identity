@@ -1,23 +1,14 @@
+use crate::util;
 use eyre::WrapErr;
-use sqlx::{
-    migrate::Migrator,
-    postgres::{PgConnectOptions, PgPool},
-    ConnectOptions,
-};
-use std::{path::PathBuf, str::FromStr};
-use tracing::log::LevelFilter;
+use sqlx::migrate::Migrator;
+use std::path::PathBuf;
 
 pub async fn run(args: Args) -> eyre::Result<()> {
     let migrator = Migrator::new(&*args.source)
         .await
         .wrap_err("failed to load migrations")?;
 
-    let options = PgConnectOptions::from_str(&args.database_url)
-        .wrap_err("invalid database URL format")?
-        .log_statements(LevelFilter::Debug);
-    let db = PgPool::connect_with(options)
-        .await
-        .wrap_err("failed to connect to the database")?;
+    let db = util::connect_to_database(&args.database_url).await?;
 
     match args.command {
         Command::Add { name } => migrator::add(&args.source, &name.join("_"))?,
