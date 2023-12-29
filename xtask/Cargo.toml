@@ -6,19 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.4", features = ["derive", "env"] }
-color-eyre = "0.6"
-database = { path = "../database" }
-dotenvy = "0.15"
-eyre = "0.6"
-graphql = { path = "../graphql" }
-logging = { version = "0.1", registry = "wafflehacks" }
+clap.workspace = true
+color-eyre.workspace = true
+database.workspace = true
+dotenvy.workspace = true
+eyre.workspace = true
+graphql.workspace = true
+logging.workspace = true
 migrator = { version = "0.2", registry = "wafflehacks" }
-redis = { version = "0.23", default-features = false, features = ["aio", "connection-manager", "tokio-comp"] }
-session = { path = "../session" }
-sqlx = { version = "0.7", features = ["migrate", "postgres", "runtime-tokio", "tls-rustls"] }
-tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
-tracing = "0.1"
-url = "2.4"
-
-[workspace]
+redis.workspace = true
+session.workspace = true
+sqlx = { workspace = true, features = ["migrate"] }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+tracing.workspace = true
+url.workspace = true

@@ -7,11 +7,11 @@ edition = "2021"
 async-graphql = { workspace = true, features = ["playground"] }
 async-graphql-axum = "6.0"
 axum = { workspace = true, features = ["form", "headers", "http1", "http2", "query", "tokio"] }
-clap = { version = "4.3", features = ["derive", "env"] }
+clap.workspace = true
 color-eyre.workspace = true
 context = { version = "0.4", registry = "wafflehacks", features = ["extract"] }
 database.workspace = true
-dotenvy = "0.15"
+dotenvy.workspace = true
 eyre.workspace = true
 form_urlencoded = "1.2"
 futures.workspace = true
@@ -32,13 +32,16 @@ members = [
   "database",
   "graphql",
   "session",
+  "xtask",
 ]
 
 [workspace.dependencies]
 async-graphql = { version = "6.0", features = ["chrono"], default-features = false }
 axum = { version = "0.6", default-features = false }
 chrono = "0.4"
+clap = { version = "4.4", features = ["derive", "env"] }
 color-eyre = "0.6"
+dotenvy = "0.15"
 eyre = "0.6"
 futures = { version = "0.3", default-features = false, features = ["async-await", "std"] }
 logging = { version = "0.1", registry = "wafflehacks" }
@@ -46,6 +49,7 @@ rand = "0.8"
 redis = { version = "0.23", default-features = false, features = ["aio", "connection-manager", "tokio-comp"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio", "tls-rustls"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread"] }
 tracing = { version = "0.1", features = ["log"] }
 url = "2.4"
