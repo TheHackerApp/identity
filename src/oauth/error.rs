@@ -62,7 +62,7 @@ impl IntoResponse for Error {
                 response("internal error", StatusCode::INTERNAL_SERVER_ERROR)
             }
             Self::InvalidParameter(param) => response(
-                format!("invalid value parameter for {param:?}"),
+                format!("invalid value for parameter {param:?}"),
                 StatusCode::BAD_REQUEST,
             ),
         }

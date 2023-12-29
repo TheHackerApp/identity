@@ -1,5 +1,6 @@
 use axum::{routing::get, Router};
 use database::PgPool;
+use globset::GlobSet;
 use redis::aio::ConnectionManager as RedisConnectionManager;
 use url::Url;
 
@@ -15,6 +16,7 @@ pub fn router(
     cache: RedisConnectionManager,
     db: PgPool,
     frontend_url: Url,
+    allowed_redirect_domains: GlobSet,
     cookie_signing_key: &str,
 ) -> Router {
     let sessions = session::Manager::new(
@@ -24,7 +26,13 @@ pub fn router(
         cookie_signing_key,
     );
 
-    let state = AppState::new(api_url, db, frontend_url, sessions.clone());
+    let state = AppState::new(
+        api_url,
+        allowed_redirect_domains,
+        db,
+        frontend_url,
+        sessions.clone(),
+    );
 
     Router::new()
         .route("/context", get(handlers::context))

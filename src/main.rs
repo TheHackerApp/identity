@@ -1,6 +1,7 @@
 use axum::Server;
 use clap::Parser;
 use eyre::{eyre, WrapErr};
+use globset::{Glob, GlobSet};
 use logging::OpenTelemetryProtocol;
 use redis::aio::ConnectionManager as RedisConnectionManager;
 use std::net::SocketAddr;
@@ -24,11 +25,15 @@ async fn main() -> eyre::Result<()> {
     let db = database::connect(&config.database_url).await?;
     let cache = connect_to_cache(&config.cache_url).await?;
 
+    let allowed_redirect_domains = config
+        .allowed_redirect_domains_matcher()
+        .wrap_err("invalid allowed redirect domains")?;
     let router = identity::router(
         config.api_url,
         cache,
         db,
         config.frontend_url,
+        allowed_redirect_domains,
         &config.cookie_signing_key,
     );
 
@@ -103,6 +108,12 @@ struct Config {
     #[arg(long, env = "FRONTEND_URL")]
     frontend_url: Url,
 
+    /// A comma-separated list of domains that the OAuth flow is allowed to return to
+    ///
+    /// Allows globs in individual domains. Also automatically includes any registered custom domains
+    #[arg(long, value_delimiter = ',', env = "ALLOWED_REDIRECT_DOMAINS")]
+    allowed_redirect_domains: Vec<String>,
+
     /// A secret to sign the session cookie with
     ///
     /// This should be a long, random string
@@ -121,6 +132,19 @@ struct Config {
         env = "OTEL_EXPORTER_OTLP_PROTOCOL",
     )]
     opentelemetry_protocol: OpenTelemetryProtocol,
+}
+
+impl Config {
+    /// Construct a matcher for the allowed redirect domains
+    fn allowed_redirect_domains_matcher(&self) -> Result<GlobSet, globset::Error> {
+        let mut set = GlobSet::builder();
+
+        for glob in &self.allowed_redirect_domains {
+            let glob = Glob::new(glob)?;
+            set.add(glob);
+        }
+        set.build()
+    }
 }
 
 /// Load environment variables from a .env file, if it exists.

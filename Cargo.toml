@@ -15,6 +15,7 @@ dotenvy.workspace = true
 eyre.workspace = true
 form_urlencoded = "1.2"
 futures.workspace = true
+globset = { version = "0.4", default-features = false }
 graphql.workspace = true
 logging = { workspace = true, features = ["http", "opentelemetry"] }
 rand.workspace = true

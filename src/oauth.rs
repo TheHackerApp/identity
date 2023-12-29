@@ -1,4 +1,4 @@
-use crate::state::{ApiUrl, AppState, FrontendUrl};
+use crate::state::{AllowedRedirectDomains, ApiUrl, AppState, FrontendUrl};
 use axum::{
     extract::{Form, Path, Query, State},
     response::Redirect,
@@ -32,8 +32,15 @@ pub(crate) async fn launch(
     State(url): State<ApiUrl>,
     State(client): State<Client>,
     State(db): State<PgPool>,
+    State(allowed_redirect_domains): State<AllowedRedirectDomains>,
 ) -> Result<Redirect> {
-    // TODO: validate the return to URL to prevent an open redirect
+    if let Some(return_to) = &params.return_to {
+        if !allowed_redirect_domains.can_redirect_to(return_to) {
+            return Err(Error::InvalidParameter("return-to"));
+        }
+
+        // TODO: check redirect URL against custom domains
+    }
 
     if let Some(provider) = Provider::find_enabled(&slug, &db).await? {
         let redirect_url = url.join("/oauth/callback");
