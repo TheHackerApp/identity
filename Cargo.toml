@@ -9,7 +9,7 @@ async-graphql-axum = "6.0"
 axum = { workspace = true, features = ["form", "headers", "http1", "http2", "query", "tokio"] }
 clap = { version = "4.3", features = ["derive", "env"] }
 color-eyre.workspace = true
-context = { version = "0.3.2", registry = "wafflehacks" }
+context = { version = "0.4", registry = "wafflehacks", features = ["extract"] }
 database.workspace = true
 dotenvy = "0.15"
 eyre.workspace = true

@@ -7,7 +7,10 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use context::user::{AuthenticatedContext, Context, Params, RegistrationNeededContext};
+use context::{
+    scope,
+    user::{self, AuthenticatedContext, RegistrationNeededContext},
+};
 use database::{PgPool, User};
 use session::SessionState;
 use tracing::instrument;
@@ -29,9 +32,11 @@ pub(crate) fn oauth() -> Router<AppState> {
 #[instrument(name = "graphql", skip_all)]
 pub(crate) async fn graphql(
     State(schema): State<graphql::Schema>,
+    scope: scope::Context,
+    user: user::Context,
     req: GraphQLRequest,
 ) -> GraphQLResponse {
-    let req = req.into_inner();
+    let req = req.into_inner().data(scope).data(user);
     schema.execute(req).await.into()
 }
 
@@ -45,10 +50,12 @@ pub(crate) async fn playground() -> Html<String> {
 /// Get the user context for the request
 #[instrument(name = "context", skip_all)]
 pub(crate) async fn context(
-    Query(params): Query<Params<'_>>,
+    Query(params): Query<user::Params<'_>>,
     State(db): State<PgPool>,
     State(sessions): State<session::Manager>,
-) -> Result<Json<Context>> {
+) -> Result<Json<user::Context>> {
+    use user::Context;
+
     let session = sessions
         .load_from_token(&params.token)
         .await?
