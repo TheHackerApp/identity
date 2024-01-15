@@ -3,7 +3,7 @@ use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
     extract::{Query, State},
-    response::{Html, Json},
+    response::Html,
     routing::{get, post},
     Router,
 };
@@ -53,7 +53,7 @@ pub(crate) async fn context(
     Query(params): Query<user::Params<'_>>,
     State(db): State<PgPool>,
     State(sessions): State<session::Manager>,
-) -> Result<Json<user::Context>> {
+) -> Result<user::Context> {
     use user::Context;
 
     let session = sessions
@@ -87,5 +87,5 @@ pub(crate) async fn context(
         }
     };
 
-    Ok(Json(context))
+    Ok(context)
 }
