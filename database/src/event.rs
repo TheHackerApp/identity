@@ -173,7 +173,7 @@ impl Event {
 
     /// The custom domain for the event
     // TODO: restrict to directors/admin
-    #[instrument(name = "Event::custom_domain", skip_all)]
+    #[instrument(name = "Event::custom_domain", skip_all, fields(%self.slug))]
     async fn custom_domain(
         &self,
         ctx: &async_graphql::Context<'_>,
@@ -185,7 +185,7 @@ impl Event {
     }
 
     /// The organization that owns the event
-    #[instrument(name = "Event::organization", skip_all)]
+    #[instrument(name = "Event::organization", skip_all, fields(%self.slug))]
     async fn organization(
         &self,
         ctx: &async_graphql::Context<'_>,

@@ -112,7 +112,7 @@ impl Organization {
 #[async_graphql::ComplexObject]
 impl Organization {
     /// All the events owned by the organization
-    #[instrument(name = "Organization::events", skip_all)]
+    #[instrument(name = "Organization::events", skip_all, fields(%self.id))]
     async fn events(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Event>> {
         let loader = ctx.data_unchecked::<EventsForOrganizationLoader>();
         let events = loader.load_one(self.id).await.extend()?.unwrap_or_default();

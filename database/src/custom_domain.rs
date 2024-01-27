@@ -121,7 +121,7 @@ impl CustomDomain {
 #[async_graphql::ComplexObject]
 impl CustomDomain {
     /// The event that the custom domain is attached to
-    #[instrument(name = "CustomDomain::event", skip_all)]
+    #[instrument(name = "CustomDomain::event", skip_all, fields(%self.event, %self.name))]
     async fn event(&self, ctx: &async_graphql::Context<'_>) -> async_graphql::Result<Event> {
         let loader = ctx.data_unchecked::<EventLoader>();
         let event = loader
