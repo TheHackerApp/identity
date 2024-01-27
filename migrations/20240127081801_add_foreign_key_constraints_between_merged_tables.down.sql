@@ -1,0 +1,3 @@
+ALTER TABLE participants DROP CONSTRAINT participants_event_fkey;
+ALTER TABLE organizers DROP CONSTRAINT organizers_organization_id_fkey;
+ALTER TABLE organizations DROP CONSTRAINT organizations_owner_id_fkey;
