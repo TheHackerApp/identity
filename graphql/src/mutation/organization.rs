@@ -1,5 +1,6 @@
 use super::{results, validators, UserError};
 use async_graphql::{Context, InputObject, MaybeUndefined, Object, Result, ResultExt};
+use database::loaders::UserLoader;
 use database::{loaders::OrganizationLoader, Organization, PgPool};
 use tracing::instrument;
 
@@ -38,10 +39,13 @@ impl OrganizationMutation {
             return Ok(UserError::new(&["name"], "cannot be empty").into());
         }
 
-        // TODO: ensure owner exists
+        let user_loader = ctx.data_unchecked::<UserLoader>();
+        let Some(user) = user_loader.load_one(input.owner_id).await.extend()? else {
+            return Ok(UserError::new(&["owner_id"], "owner does not exist").into());
+        };
 
         let db = ctx.data_unchecked::<PgPool>();
-        let organization = Organization::create(&input.name, input.owner_id, db)
+        let organization = Organization::create(&input.name, user.id, db)
             .await
             .extend()?;
 
@@ -111,10 +115,13 @@ impl OrganizationMutation {
         ctx: &Context<'_>,
         input: TransferOrganizationOwnershipInput,
     ) -> Result<TransferOrganizationOwnershipResult> {
-        // TODO: ensure new owner exists
+        let user_loader = ctx.data_unchecked::<UserLoader>();
+        let Some(user) = user_loader.load_one(input.new_owner_id).await.extend()? else {
+            return Ok(UserError::new(&["new_owner_id"], "new owner does not exist").into());
+        };
 
-        let loader = ctx.data_unchecked::<OrganizationLoader>();
-        let mut organization = match loader.load_one(input.id).await.extend()? {
+        let organization_loader = ctx.data_unchecked::<OrganizationLoader>();
+        let mut organization = match organization_loader.load_one(input.id).await.extend()? {
             Some(organization) => organization,
             None => return Ok(UserError::new(&["id"], "organization does not exist").into()),
         };
@@ -122,7 +129,7 @@ impl OrganizationMutation {
         let db = ctx.data_unchecked::<PgPool>();
         organization
             .update()
-            .owner(input.new_owner_id)
+            .owner(user.id)
             .save(db)
             .await
             .extend()?;

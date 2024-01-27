@@ -1,6 +1,9 @@
 use super::UserError;
 use async_graphql::{Context, InputObject, Object, Result, ResultExt, SimpleObject};
-use database::{loaders::UserLoader, Organizer, PgPool, User};
+use database::{
+    loaders::{OrganizationLoader, UserLoader},
+    Organization, Organizer, PgPool, User,
+};
 use tracing::instrument;
 
 #[derive(Default)]
@@ -15,19 +18,26 @@ impl OrganizerMutation {
         ctx: &Context<'_>,
         input: AddUserToOrganizationInput,
     ) -> Result<AddUserToOrganizationResult> {
-        // TODO: ensure organization exists
+        let organization_loader = ctx.data_unchecked::<OrganizationLoader>();
+        let Some(organization) = organization_loader
+            .load_one(input.organization_id)
+            .await
+            .extend()?
+        else {
+            return Ok(UserError::new(&["organization_id"], "organization does not exist").into());
+        };
 
-        let loader = ctx.data_unchecked::<UserLoader>();
-        let Some(user) = loader.load_one(input.user_id).await.extend()? else {
+        let user_loader = ctx.data_unchecked::<UserLoader>();
+        let Some(user) = user_loader.load_one(input.user_id).await.extend()? else {
             return Ok(UserError::new(&["user_id"], "user does not exist").into());
         };
 
         let db = ctx.data_unchecked::<PgPool>();
-        Organizer::create(input.organization_id, user.id, db)
+        Organizer::create(organization.id, user.id, db)
             .await
             .extend()?;
 
-        Ok((user, input.organization_id).into())
+        Ok((user, organization).into())
     }
 
     /// Remove a user from an organization
@@ -60,13 +70,13 @@ struct AddUserToOrganizationResult {
     /// The user that was added to the organization
     user: Option<User>,
     /// The organization the user was added to
-    organization: Option<i32>,
+    organization: Option<Organization>,
     /// Errors that may have occurred while processing the action
     user_errors: Vec<UserError>,
 }
 
-impl From<(User, i32)> for AddUserToOrganizationResult {
-    fn from((user, organization): (User, i32)) -> Self {
+impl From<(User, Organization)> for AddUserToOrganizationResult {
+    fn from((user, organization): (User, Organization)) -> Self {
         Self {
             user: Some(user),
             organization: Some(organization),

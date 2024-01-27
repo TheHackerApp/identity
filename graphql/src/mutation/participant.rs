@@ -1,6 +1,9 @@
 use super::UserError;
 use async_graphql::{Context, InputObject, Object, Result, ResultExt, SimpleObject};
-use database::{loaders::UserLoader, Participant, PgPool, User};
+use database::{
+    loaders::{EventLoader, UserLoader},
+    Event, Participant, PgPool, User,
+};
 use tracing::instrument;
 
 #[derive(Default)]
@@ -15,19 +18,22 @@ impl ParticipantMutation {
         ctx: &Context<'_>,
         input: AddUserToEventInput,
     ) -> Result<AddUserToEventResult> {
-        // TODO: ensure event exists
+        let event_loader = ctx.data_unchecked::<EventLoader>();
+        let Some(event) = event_loader.load_one(input.event).await.extend()? else {
+            return Ok(UserError::new(&["event"], "event does not exist").into());
+        };
 
-        let loader = ctx.data_unchecked::<UserLoader>();
-        let Some(user) = loader.load_one(input.user_id).await.extend()? else {
+        let user_loader = ctx.data_unchecked::<UserLoader>();
+        let Some(user) = user_loader.load_one(input.user_id).await.extend()? else {
             return Ok(UserError::new(&["user_id"], "user does not exist").into());
         };
 
         let db = ctx.data_unchecked::<PgPool>();
-        Participant::create(&input.event, input.user_id, db)
+        Participant::create(&event.slug, user.id, db)
             .await
             .extend()?;
 
-        Ok((user, input.event).into())
+        Ok((user, event).into())
     }
 
     /// Remove a participant from an event
@@ -60,13 +66,13 @@ struct AddUserToEventResult {
     /// The user that was added to the event
     user: Option<User>,
     /// The event the user was added to
-    event: Option<String>,
+    event: Option<Event>,
     /// Errors that may have occurred while processing the action
     user_errors: Vec<UserError>,
 }
 
-impl From<(User, String)> for AddUserToEventResult {
-    fn from((user, event): (User, String)) -> Self {
+impl From<(User, Event)> for AddUserToEventResult {
+    fn from((user, event): (User, Event)) -> Self {
         Self {
             user: Some(user),
             event: Some(event),
