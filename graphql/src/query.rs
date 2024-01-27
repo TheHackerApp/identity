@@ -1,4 +1,5 @@
-use async_graphql::{Context, Object, OneofObject, Result, ResultExt};
+use async_graphql::{Context, Error, Object, OneofObject, Result, ResultExt};
+use context::{checks, guard, scope};
 use database::{
     loaders::{
         EventLoader, OrganizationLoader, ProviderLoader, UserByPrimaryEmailLoader, UserLoader,
@@ -20,7 +21,7 @@ impl Query {
         Ok(providers)
     }
 
-    /// Get an authentication provider by it's slug
+    /// Get an authentication provider by its slug
     #[instrument(name = "Query::provider", skip(self, ctx))]
     async fn provider(&self, ctx: &Context<'_>, slug: String) -> Result<Option<Provider>> {
         let loader = ctx.data_unchecked::<ProviderLoader>();
@@ -45,6 +46,82 @@ impl Query {
         .extend()?;
 
         Ok(user)
+    }
+
+    /// Get all the registered organizations
+    #[instrument(name = "Query::organizations", skip_all)]
+    #[graphql(guard = "guard(checks::is_admin)")]
+    async fn organizations(&self, ctx: &Context<'_>) -> Result<Vec<Organization>> {
+        let db = ctx.data_unchecked::<PgPool>();
+        let organizations = Organization::all(db).await.extend()?;
+
+        Ok(organizations)
+    }
+
+    /// Get an organization by its ID
+    #[instrument(name = "Query::organization", skip(self, ctx))]
+    async fn organization(
+        &self,
+        ctx: &Context<'_>,
+        id: Option<i32>,
+    ) -> Result<Option<Organization>> {
+        use scope::Context;
+
+        let scope = ctx.data_unchecked::<Context>();
+        let id = match (scope, id) {
+            (Context::Event(e), Some(id)) if e.organization_id == id => id,
+            (Context::Event(e), None) => e.organization_id,
+            (_, Some(id)) => {
+                checks::is_admin(ctx)?;
+                id
+            }
+            (_, None) => {
+                return Err(Error::new(
+                    r#"argument "id" is required as the event could not be inferred"#,
+                ));
+            }
+        };
+
+        let loader = ctx.data_unchecked::<OrganizationLoader>();
+        let organization = loader.load_one(id).await?;
+
+        Ok(organization)
+    }
+
+    /// Get all the events being put on
+    #[instrument(name = "Query::events", skip_all)]
+    #[graphql(guard = "guard(checks::is_admin)")]
+    async fn events(&self, ctx: &Context<'_>) -> Result<Vec<Event>> {
+        let db = ctx.data_unchecked::<PgPool>();
+        let events = Event::all(db).await?;
+
+        Ok(events)
+    }
+
+    /// Get an event by its slug
+    #[instrument(name = "Query::event", skip(self, ctx))]
+    async fn event(&self, ctx: &Context<'_>, slug: Option<String>) -> Result<Option<Event>> {
+        use scope::Context;
+
+        let scope = ctx.data_unchecked::<Context>();
+        let slug = match (scope, slug) {
+            (Context::Event(e), Some(slug)) if e.event == slug => slug,
+            (Context::Event(e), None) => e.event.to_owned(),
+            (_, Some(slug)) => {
+                checks::is_admin(ctx)?;
+                slug
+            }
+            (_, None) => {
+                return Err(Error::new(
+                    r#"argument "slug" is required as the event could not be inferred"#,
+                ));
+            }
+        };
+
+        let loader = ctx.data_unchecked::<EventLoader>();
+        let event = loader.load_one(slug).await?;
+
+        Ok(event)
     }
 
     #[graphql(entity)]
@@ -84,7 +161,7 @@ impl Query {
     }
 }
 
-/// How to lookup a user
+/// How to look up a user
 #[derive(Debug, OneofObject)]
 enum UserBy {
     /// By ID

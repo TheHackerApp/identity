@@ -615,6 +615,7 @@ version = "0.4.3"
 source = "registry+ssh://git@ssh.shipyard.rs/wafflehacks/crate-index.git"
 checksum = "2103e5a45ca817d1f413204ae621cdf511e734115e001f00cdde32d4acbac35e"
 dependencies = [
+ "async-graphql",
  "axum",
  "headers",
  "http",
@@ -1056,6 +1057,7 @@ name = "graphql"
 version = "0.1.0"
 dependencies = [
  "async-graphql",
+ "context",
  "database",
  "logging",
  "tracing",

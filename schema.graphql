@@ -93,6 +93,28 @@ type CreateProviderResult {
 }
 
 """
+A custom domain the event is accessible at
+"""
+type CustomDomain {
+	"""
+	The domain name for the event
+	"""
+	name: String!
+	"""
+	When the custom domain was first created
+	"""
+	createdAt: DateTime!
+	"""
+	When the custom domain was last updated
+	"""
+	updatedAt: DateTime!
+	"""
+	The event that the custom domain is attached to
+	"""
+	event: Event!
+}
+
+"""
 Implement the DateTime<Utc> scalar
 
 The input/output is a string in RFC3339 format.
@@ -125,11 +147,38 @@ type DeleteUserResult {
 An event that is put on
 """
 type Event @key(fields: "slug") {
+	"""
+	The unique slug
+	"""
 	slug: String!
 	"""
-	The users that are part of the event
+	Display name of the event
 	"""
-	participants: [Participant!]!
+	name: String!
+	"""
+	When write-access expires
+	"""
+	expiresOn: DateTime!
+	"""
+	When the event was first created
+	"""
+	createdAt: DateTime!
+	"""
+	When the event was last updated
+	"""
+	updatedAt: DateTime!
+	"""
+	Whether the event is active
+	"""
+	active: Boolean!
+	"""
+	The custom domain for the event
+	"""
+	customDomain: CustomDomain
+	"""
+	The organization that owns the event
+	"""
+	organization: Organization!
 }
 
 
@@ -212,11 +261,38 @@ type Mutation {
 An organization that puts on events
 """
 type Organization @key(fields: "id") {
+	"""
+	A unique ID
+	"""
 	id: Int!
 	"""
-	The users that are part of the organization
+	The name of the organization
 	"""
-	members: [Organizer!]!
+	name: String!
+	"""
+	URL for the organization's logo
+	"""
+	logo: String
+	"""
+	URL for the organization's website
+	"""
+	website: String
+	"""
+	When the organization was first created
+	"""
+	createdAt: DateTime!
+	"""
+	When the organization was last updated
+	"""
+	updatedAt: DateTime!
+	"""
+	All the events owned by the organization
+	"""
+	events: [Event!]!
+	"""
+	The owner of the organization
+	"""
+	owner: User!
 }
 
 """
@@ -303,13 +379,29 @@ type Query {
 	"""
 	providers: [Provider!]!
 	"""
-	Get an authentication provider by it's slug
+	Get an authentication provider by its slug
 	"""
 	provider(slug: String!): Provider
 	"""
 	Get a user by their ID
 	"""
 	user(by: UserBy!): User
+	"""
+	Get all the registered organizations
+	"""
+	organizations: [Organization!]!
+	"""
+	Get an organization by its ID
+	"""
+	organization(id: Int): Organization
+	"""
+	Get all the events being put on
+	"""
+	events: [Event!]!
+	"""
+	Get an event by its slug
+	"""
+	event(slug: String): Event
 }
 
 """
@@ -517,15 +609,15 @@ type User @key(fields: "id") {
 }
 
 """
-How to lookup a user
+How to look up a user
 """
 input UserBy @oneOf {
 	"""
-	How to lookup a user
+	How to look up a user
 	"""
 	id: Int
 	"""
-	How to lookup a user
+	How to look up a user
 	"""
 	primaryEmail: String
 }
