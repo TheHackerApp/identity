@@ -1,6 +1,9 @@
 use crate::Result;
 #[cfg(feature = "graphql")]
-use crate::{loaders::UserLoader, stubs::Organization, User};
+use crate::{
+    loaders::{OrganizationLoader, UserLoader},
+    Organization, User,
+};
 #[cfg(feature = "graphql")]
 use async_graphql::{ComplexObject, Context, ResultExt, SimpleObject};
 use chrono::{DateTime, Utc};
@@ -31,10 +34,15 @@ pub struct Organizer {
 impl Organizer {
     /// The organization the user is part of
     #[instrument(name = "Organizer::organization", skip_all, fields(%self.organization_id, %self.user_id))]
-    async fn organization(&self) -> Organization {
-        Organization {
-            id: self.organization_id,
-        }
+    async fn organization(&self, ctx: &Context<'_>) -> async_graphql::Result<Organization> {
+        let loader = ctx.data_unchecked::<OrganizationLoader>();
+        let organization = loader
+            .load_one(self.organization_id)
+            .await
+            .extend()?
+            .expect("organization must exist");
+
+        Ok(organization)
     }
 
     /// The user that is part of the organization

@@ -1,6 +1,9 @@
 use crate::Result;
 #[cfg(feature = "graphql")]
-use crate::{loaders::UserLoader, stubs::Event, User};
+use crate::{
+    loaders::{EventLoader, UserLoader},
+    Event, User,
+};
 #[cfg(feature = "graphql")]
 use async_graphql::{ComplexObject, Context, ResultExt, SimpleObject};
 use chrono::{DateTime, Utc};
@@ -31,10 +34,15 @@ pub struct Participant {
 impl Participant {
     /// The event the user is participating in
     #[instrument(name = "Participant::event", skip_all, fields(%self.event, %self.user_id))]
-    async fn event(&self) -> Event {
-        Event {
-            slug: self.event.clone(),
-        }
+    async fn event(&self, ctx: &Context<'_>) -> async_graphql::Result<Event> {
+        let loader = ctx.data_unchecked::<EventLoader>();
+        let event = loader
+            .load_one(self.event.clone())
+            .await
+            .extend()?
+            .expect("event must exist");
+
+        Ok(event)
     }
 
     /// The user associated with the event

@@ -20,8 +20,6 @@ mod organization;
 mod organizer;
 mod participant;
 mod provider;
-#[cfg(feature = "graphql")]
-pub mod stubs;
 mod types;
 mod user;
 

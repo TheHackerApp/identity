@@ -1,6 +1,9 @@
 use crate::Result;
 #[cfg(feature = "graphql")]
-use crate::{loaders::EventsForOrganizationLoader, stubs, Event};
+use crate::{
+    loaders::{EventsForOrganizationLoader, UserLoader},
+    Event, User,
+};
 #[cfg(feature = "graphql")]
 use async_graphql::{Context, ResultExt};
 use chrono::{DateTime, Utc};
@@ -118,8 +121,16 @@ impl Organization {
     }
 
     /// The owner of the organization
-    async fn owner(&self) -> stubs::User {
-        stubs::User { id: self.owner_id }
+    #[instrument(name = "Organization::owner", skip_all, fields(%self.id))]
+    async fn owner(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
+        let loader = ctx.data_unchecked::<UserLoader>();
+        let user = loader
+            .load_one(self.owner_id)
+            .await
+            .extend()?
+            .expect("organization must have an owner");
+
+        Ok(user)
     }
 }
 

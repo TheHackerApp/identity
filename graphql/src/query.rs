@@ -1,8 +1,9 @@
 use async_graphql::{Context, Object, OneofObject, Result, ResultExt};
 use database::{
-    loaders::{ProviderLoader, UserByPrimaryEmailLoader, UserLoader},
-    stubs::{Event, Organization},
-    PgPool, Provider, User,
+    loaders::{
+        EventLoader, OrganizationLoader, ProviderLoader, UserByPrimaryEmailLoader, UserLoader,
+    },
+    Event, Organization, PgPool, Provider, User,
 };
 use tracing::instrument;
 
@@ -47,15 +48,27 @@ impl Query {
     }
 
     #[graphql(entity)]
-    #[instrument(name = "Query::event_entity_by_slug", skip(self))]
-    async fn event_entity_by_slug(&self, #[graphql(key)] slug: String) -> Option<Event> {
-        Some(Event { slug })
+    #[instrument(name = "Query::event_entity_by_slug", skip(self, ctx))]
+    async fn event_entity_by_slug(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(key)] slug: String,
+    ) -> Result<Option<Event>> {
+        let loader = ctx.data_unchecked::<EventLoader>();
+        let event = loader.load_one(slug).await.extend()?;
+        Ok(event)
     }
 
     #[graphql(entity)]
-    #[instrument(name = "Query::organization_entity_by_id", skip(self))]
-    async fn organization_entity_by_id(&self, #[graphql(key)] id: i32) -> Option<Organization> {
-        Some(Organization { id })
+    #[instrument(name = "Query::organization_entity_by_id", skip(self, ctx))]
+    async fn organization_entity_by_id(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(key)] id: i32,
+    ) -> Result<Option<Organization>> {
+        let loader = ctx.data_unchecked::<OrganizationLoader>();
+        let organization = loader.load_one(id).await.extend()?;
+        Ok(organization)
     }
 
     #[graphql(entity)]
