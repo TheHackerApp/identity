@@ -11,9 +11,12 @@ use std::{
 };
 use tracing::{info, instrument, log::LevelFilter};
 
+mod custom_domain;
+mod event;
 mod identity;
 #[cfg(feature = "graphql")]
 pub mod loaders;
+mod organization;
 mod organizer;
 mod participant;
 mod provider;
@@ -22,7 +25,10 @@ pub mod stubs;
 mod types;
 mod user;
 
+pub use custom_domain::CustomDomain;
+pub use event::Event;
 pub use identity::Identity;
+pub use organization::Organization;
 pub use organizer::Organizer;
 pub use participant::Participant;
 pub use provider::{Provider, ProviderConfiguration};

@@ -1,4 +1,6 @@
-use crate::{Identity, Organizer, Participant, PgPool, Provider, User};
+use crate::{
+    CustomDomain, Event, Identity, Organization, Organizer, Participant, PgPool, Provider, User,
+};
 use async_graphql::{
     dataloader::{DataLoader, Loader, NoCache},
     SchemaBuilder,
@@ -46,8 +48,12 @@ macro_rules! declare_loader {
     };
 }
 
+declare_loader!(CustomDomainLoader<CustomDomainLoaderImpl> for CustomDomain => event(String));
+declare_loader!(EventLoader<EventLoaderImpl> for Event => slug(String));
+declare_loader!(EventsForOrganizationLoader<EventsForOrganizationLoaderImpl> for Event => organization_id(i32) using load_for_organizations providing Vec<Event>);
 declare_loader!(EventsForUserLoader<EventsForUserLoaderImpl> for Participant => user_id(i32) using load_for_user providing Vec<Participant>);
 declare_loader!(IdentitiesForUserLoader<IdentitiesForUserLoaderImpl> for Identity => user_id(i32) using load_for_user providing Vec<Identity>);
+declare_loader!(OrganizationLoader<OrganizationLoaderImpl> for Organization => id(i32));
 declare_loader!(OrganizationsForUserLoader<OrganizationsForUserLoaderImpl> for Organizer => user_id(i32) using load_for_user providing Vec<Organizer>);
 declare_loader!(ProviderLoader<ProviderLoaderImpl> for Provider => slug(String));
 declare_loader!(UserLoader<UserLoaderImpl> for User => id(i32));
@@ -62,8 +68,12 @@ pub trait RegisterDataLoaders {
 
 impl<Q, M, S> RegisterDataLoaders for SchemaBuilder<Q, M, S> {
     fn register_dataloaders(self, db: &PgPool) -> Self {
-        self.data(EventsForUserLoaderImpl::new(db))
+        self.data(CustomDomainLoaderImpl::new(db))
+            .data(EventLoaderImpl::new(db))
+            .data(EventsForOrganizationLoaderImpl::new(db))
+            .data(EventsForUserLoaderImpl::new(db))
             .data(IdentitiesForUserLoaderImpl::new(db))
+            .data(OrganizationLoaderImpl::new(db))
             .data(OrganizationsForUserLoaderImpl::new(db))
             .data(ProviderLoaderImpl::new(db))
             .data(UserLoaderImpl::new(db))

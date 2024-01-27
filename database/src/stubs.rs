@@ -5,6 +5,15 @@ use crate::{
 use async_graphql::{ComplexObject, Context, Result, ResultExt, SimpleObject};
 use tracing::instrument;
 
+// TODO: remove stubs entirely
+
+/// A user of the service
+#[derive(Clone, Debug, Eq, PartialEq, SimpleObject)]
+#[graphql(unresolvable)]
+pub struct User {
+    pub id: i32,
+}
+
 /// An organization that puts on events
 #[derive(Debug, SimpleObject)]
 #[graphql(complex)]
