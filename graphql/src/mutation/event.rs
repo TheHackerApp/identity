@@ -1,9 +1,6 @@
 use super::{results, validators, UserError};
 use async_graphql::{Context, ErrorExtensions, InputObject, Object, Result, ResultExt};
-use database::{
-    loaders::{EventLoader, OrganizationLoader},
-    Event, PgPool,
-};
+use database::{loaders::EventLoader, Event, Organization, PgPool};
 use tracing::instrument;
 
 results! {
@@ -52,12 +49,15 @@ impl EventMutation {
             return Ok(user_errors.into());
         }
 
-        let loader = ctx.data_unchecked::<OrganizationLoader>();
-        if let None = loader.load_one(input.organization_id).await.extend()? {
+        let db = ctx.data_unchecked::<PgPool>();
+
+        if !Organization::exists(input.organization_id, db)
+            .await
+            .extend()?
+        {
             return Ok(UserError::new(&["organization_id"], "organization does not exist").into());
         }
 
-        let db = ctx.data_unchecked::<PgPool>();
         match Event::create(&input.slug, &input.name, input.organization_id, db).await {
             Ok(organization) => Ok(organization.into()),
             Err(e) if e.is_unique_violation() => {
