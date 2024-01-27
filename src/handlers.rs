@@ -1,4 +1,4 @@
-use crate::{oauth, AppState};
+use crate::AppState;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
@@ -16,8 +16,10 @@ use session::SessionState;
 use tracing::instrument;
 
 mod error;
+mod oauth;
 
 use error::Result;
+pub(crate) use oauth::Client as OAuthClient;
 
 /// Create router for handling OAuth
 pub(crate) fn oauth() -> Router<AppState> {

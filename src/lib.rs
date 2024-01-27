@@ -5,7 +5,6 @@ use redis::aio::ConnectionManager as RedisConnectionManager;
 use url::Url;
 
 mod handlers;
-mod oauth;
 mod state;
 
 pub(crate) use state::AppState;

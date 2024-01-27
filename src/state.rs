@@ -1,4 +1,4 @@
-use crate::oauth;
+use crate::handlers::OAuthClient;
 use axum::extract::FromRef;
 use database::PgPool;
 use globset::GlobSet;
@@ -12,7 +12,7 @@ pub(crate) struct AppState {
     pub api_url: ApiUrl,
     pub db: PgPool,
     pub frontend_url: FrontendUrl,
-    pub oauth_client: oauth::Client,
+    pub oauth_client: OAuthClient,
     pub schema: graphql::Schema,
     pub sessions: session::Manager,
 }
@@ -30,7 +30,7 @@ impl AppState {
             api_url: api_url.into(),
             db: db.clone(),
             frontend_url: frontend_url.into(),
-            oauth_client: oauth::Client::default(),
+            oauth_client: OAuthClient::default(),
             schema: graphql::schema(db),
             sessions,
         }
@@ -61,7 +61,7 @@ impl FromRef<AppState> for graphql::Schema {
     }
 }
 
-impl FromRef<AppState> for oauth::Client {
+impl FromRef<AppState> for OAuthClient {
     fn from_ref(state: &AppState) -> Self {
         state.oauth_client.clone()
     }
