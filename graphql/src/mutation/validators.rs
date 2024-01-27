@@ -1,5 +1,10 @@
 use url::Url;
 
+/// Check if the argument is a valid DNS segment
+pub fn dns_segment(raw: &str) -> bool {
+    raw.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+}
+
 /// Check if the argument is a valid identifier
 pub fn identifier(raw: &str) -> bool {
     raw.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')

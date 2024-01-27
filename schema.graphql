@@ -60,6 +60,60 @@ type AddUserToOrganizationResult {
 
 
 """
+Input fields for creating an event
+"""
+input CreateEventInput {
+	"""
+	A unique slug
+	"""
+	slug: String!
+	"""
+	The display name
+	"""
+	name: String!
+	"""
+	The organization putting on the event
+	"""
+	organizationId: Int!
+}
+
+type CreateEventResult {
+	"""
+	The created event
+	"""
+	event: Event
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
+Input fields for creating an organization
+"""
+input CreateOrganizationInput {
+	"""
+	The display name
+	"""
+	name: String!
+	"""
+	Who owns the organization
+	"""
+	ownerId: Int!
+}
+
+type CreateOrganizationResult {
+	"""
+	The created organization
+	"""
+	organization: Organization
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
 Input fields for creating a provider
 """
 input CreateProviderInput {
@@ -120,6 +174,28 @@ Implement the DateTime<Utc> scalar
 The input/output is a string in RFC3339 format.
 """
 scalar DateTime @specifiedBy(url: "https://datatracker.ietf.org/doc/html/rfc3339")
+
+type DeleteEventResult {
+	"""
+	The slug of the deleted event
+	"""
+	deletedSlug: String
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+type DeleteOrganizationResult {
+	"""
+	The ID of the deleted organization
+	"""
+	deletedId: Int
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
 
 type DeleteProviderResult {
 	"""
@@ -216,9 +292,37 @@ attached to this one struct.
 """
 type Mutation {
 	"""
+	Create a new event
+	"""
+	createEvent(input: CreateEventInput!): CreateEventResult!
+	"""
+	Update the details of an event
+	"""
+	updateEvent(input: UpdateEventInput!): UpdateEventResult!
+	"""
+	Delete an event
+	"""
+	deleteEvent(slug: String!): DeleteEventResult!
+	"""
 	Unlink an authentication provider identity from a user
 	"""
 	unlinkIdentity(input: UnlinkIdentityInput!): UnlinkIdentityResult!
+	"""
+	Add a new organization
+	"""
+	createOrganization(input: CreateOrganizationInput!): CreateOrganizationResult!
+	"""
+	Update the details of an organization
+	"""
+	updateOrganization(input: UpdateOrganizationInput!): UpdateOrganizationResult!
+	"""
+	Transfer the ownership of the organization to a different user
+	"""
+	transferOrganizationOwnership(input: TransferOrganizationOwnershipInput!): TransferOrganizationOwnershipResult!
+	"""
+	Delete an organization
+	"""
+	deleteOrganization(id: Int!): DeleteOrganizationResult!
 	"""
 	Add a user to an organization
 	"""
@@ -464,6 +568,31 @@ type RemoveUserFromOrganizationResult {
 
 
 """
+Input fields for transferring the ownership of an organization
+"""
+input TransferOrganizationOwnershipInput {
+	"""
+	The ID of the organization to transfer ownership of
+	"""
+	id: Int!
+	"""
+	The ID of the new organization owner
+	"""
+	newOwnerId: Int!
+}
+
+type TransferOrganizationOwnershipResult {
+	"""
+	The organization
+	"""
+	organization: Organization
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
 Input for unlinking a user's authentication provider identity
 """
 input UnlinkIdentityInput {
@@ -482,6 +611,64 @@ type UnlinkIdentityResult {
 	The provider that was unlinked
 	"""
 	unlinkedProvider: String
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
+Input fields for updating an event
+"""
+input UpdateEventInput {
+	"""
+	The slug of the event to update
+	"""
+	slug: String!
+	"""
+	The display name
+	"""
+	name: String
+}
+
+type UpdateEventResult {
+	"""
+	The event
+	"""
+	event: Event
+	"""
+	Errors that may have occurred while processing the action
+	"""
+	userErrors: [UserError!]!
+}
+
+"""
+Input fields for updating an organization
+"""
+input UpdateOrganizationInput {
+	"""
+	The ID of the organization to update
+	"""
+	id: Int!
+	"""
+	The display name
+	"""
+	name: String
+	"""
+	The URL of the organization's logo
+	"""
+	logo: String
+	"""
+	The URL of the organization's website
+	"""
+	website: String
+}
+
+type UpdateOrganizationResult {
+	"""
+	The organization
+	"""
+	organization: Organization
 	"""
 	Errors that may have occurred while processing the action
 	"""

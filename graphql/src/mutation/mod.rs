@@ -1,13 +1,17 @@
 use async_graphql::{MergedObject, SimpleObject};
 
+mod event;
 mod identity;
+mod organization;
 mod organizer;
 mod participant;
 mod providers;
 mod user;
 mod validators;
 
+use event::EventMutation;
 use identity::IdentityMutation;
+use organization::OrganizationMutation;
 use organizer::OrganizerMutation;
 use participant::ParticipantMutation;
 use providers::ProviderMutation;
@@ -19,7 +23,9 @@ use user::UserMutation;
 /// attached to this one struct.
 #[derive(Default, MergedObject)]
 pub struct Mutation(
+    EventMutation,
     IdentityMutation,
+    OrganizationMutation,
     OrganizerMutation,
     ParticipantMutation,
     ProviderMutation,
