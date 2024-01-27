@@ -81,9 +81,8 @@ impl EventMutation {
         }
 
         let loader = ctx.data_unchecked::<EventLoader>();
-        let mut event = match loader.load_one(input.slug).await.extend()? {
-            Some(event) => event,
-            None => return Ok(UserError::new(&["slug"], "event does not exist").into()),
+        let Some(mut event) = loader.load_one(input.slug).await.extend()? else {
+            return Ok(UserError::new(&["slug"], "event does not exist").into());
         };
 
         let db = ctx.data_unchecked::<PgPool>();

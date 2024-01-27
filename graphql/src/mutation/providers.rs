@@ -91,9 +91,8 @@ impl ProviderMutation {
         }
 
         let loader = ctx.data_unchecked::<ProviderLoader>();
-        let mut provider = match loader.load_one(input.slug).await.extend()? {
-            Some(p) => p,
-            None => return Ok(UserError::new(&["slug"], "provider does not exist").into()),
+        let Some(mut provider) = loader.load_one(input.slug).await.extend()? else {
+            return Ok(UserError::new(&["slug"], "provider does not exist").into());
         };
 
         let db = ctx.data_unchecked::<PgPool>();

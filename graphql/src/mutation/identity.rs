@@ -25,9 +25,8 @@ impl IdentityMutation {
         input: UnlinkIdentityInput,
     ) -> Result<UnlinkIdentityResult> {
         let loader = ctx.data_unchecked::<IdentitiesForUserLoader>();
-        let identities = match loader.load_one(input.user_id).await.extend()? {
-            Some(identities) => identities,
-            None => return Ok(UserError::new(&["user_id"], "user does not exist").into()),
+        let Some(identities) = loader.load_one(input.user_id).await.extend()? else {
+            return Ok(UserError::new(&["user_id"], "user does not exist").into());
         };
 
         if identities.len() == 1 {

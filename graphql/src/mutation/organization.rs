@@ -90,9 +90,8 @@ impl OrganizationMutation {
         }
 
         let loader = ctx.data_unchecked::<OrganizationLoader>();
-        let mut organization = match loader.load_one(input.id).await.extend()? {
-            Some(organization) => organization,
-            None => return Ok(UserError::new(&["id"], "organization does not exist").into()),
+        let Some(mut organization) = loader.load_one(input.id).await.extend()? else {
+            return Ok(UserError::new(&["id"], "organization does not exist").into());
         };
 
         let db = ctx.data_unchecked::<PgPool>();
@@ -121,9 +120,8 @@ impl OrganizationMutation {
         };
 
         let organization_loader = ctx.data_unchecked::<OrganizationLoader>();
-        let mut organization = match organization_loader.load_one(input.id).await.extend()? {
-            Some(organization) => organization,
-            None => return Ok(UserError::new(&["id"], "organization does not exist").into()),
+        let Some(mut organization) = organization_loader.load_one(input.id).await.extend()? else {
+            return Ok(UserError::new(&["id"], "organization does not exist").into());
         };
 
         let db = ctx.data_unchecked::<PgPool>();

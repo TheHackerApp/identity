@@ -48,16 +48,14 @@ impl UserMutation {
         }
 
         let loader = ctx.data_unchecked::<UserLoader>();
-        let mut user = match loader.load_one(input.id).await.extend()? {
-            Some(u) => u,
-            None => return Ok(UserError::new(&["id"], "user does not exist").into()),
+        let Some(mut user) = loader.load_one(input.id).await.extend()? else {
+            return Ok(UserError::new(&["id"], "user does not exist").into());
         };
 
         if let Some(primary_email) = &input.primary_email {
             let loader = ctx.data_unchecked::<IdentitiesForUserLoader>();
-            let identities = match loader.load_one(user.id).await.extend()? {
-                Some(identities) => identities,
-                None => return Ok(UserError::new(&["id"], "user registration incomplete").into()),
+            let Some(identities) = loader.load_one(user.id).await.extend()? else {
+                return Ok(UserError::new(&["id"], "user registration incomplete").into());
             };
 
             if !identities.iter().any(|i| &i.email == primary_email) {
