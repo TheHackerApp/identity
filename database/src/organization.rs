@@ -62,6 +62,19 @@ impl Organization {
         Ok(by_id)
     }
 
+    /// Check if an organization exists
+    #[instrument(name = "Organization::exists", skip(db))]
+    pub async fn exists(id: i32, db: &PgPool) -> Result<bool> {
+        let result = query!(
+            "SELECT exists(SELECT 1 FROM organizations WHERE id = $1)",
+            id
+        )
+        .fetch_one(db)
+        .await?;
+
+        Ok(result.exists.unwrap_or_default())
+    }
+
     /// Get an organization by it's ID
     #[instrument(name = "Organization::find", skip(db))]
     pub async fn find(id: i32, db: &PgPool) -> Result<Option<Organization>> {

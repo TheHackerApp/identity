@@ -91,6 +91,16 @@ impl Event {
         Ok(events)
     }
 
+    /// Check if an event exists
+    #[instrument(name = "Event::exists", skip(db))]
+    pub async fn exists(slug: &str, db: &PgPool) -> Result<bool> {
+        let result = query!("SELECT exists(SELECT 1 FROM events WHERE slug = $1)", slug)
+            .fetch_one(db)
+            .await?;
+
+        Ok(result.exists.unwrap_or_default())
+    }
+
     /// Get an event by it's slug
     #[instrument(name = "Event::find", skip(db))]
     pub async fn find(slug: &str, db: &PgPool) -> Result<Option<Event>> {

@@ -63,6 +63,16 @@ impl User {
         Ok(by_primary_email)
     }
 
+    /// Check if a user exists
+    #[instrument(name = "User::exists", skip(db))]
+    pub async fn exists(id: i32, db: &PgPool) -> Result<bool> {
+        let result = query!("SELECT exists(SELECT 1 FROM users WHERE id = $1)", id)
+            .fetch_one(db)
+            .await?;
+
+        Ok(result.exists.unwrap_or_default())
+    }
+
     /// Get a user by it's ID
     #[instrument(name = "User::find", skip(db))]
     pub async fn find(id: i32, db: &PgPool) -> Result<Option<User>> {

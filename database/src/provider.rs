@@ -149,6 +149,19 @@ impl Provider {
         Ok(by_slug)
     }
 
+    /// Check if a provider exists
+    #[instrument(name = "Provider::exists", skip(db))]
+    pub async fn exists(slug: &str, db: &PgPool) -> Result<bool> {
+        let result = query!(
+            "SELECT exists(SELECT 1 FROM providers WHERE slug = $1)",
+            slug
+        )
+        .fetch_one(db)
+        .await?;
+
+        Ok(result.exists.unwrap_or_default())
+    }
+
     /// Get a provider by it's slug
     #[instrument(name = "Provider::find", skip(db))]
     pub async fn find(slug: &str, db: &PgPool) -> Result<Option<Provider>> {

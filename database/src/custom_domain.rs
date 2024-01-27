@@ -58,6 +58,32 @@ impl CustomDomain {
         Ok(by_slug)
     }
 
+    /// Test if a custom domain exists for an event
+    #[instrument(name = "CustomDomain::exists", skip(db))]
+    pub async fn exists(slug: &str, db: &PgPool) -> Result<bool> {
+        let result = query!(
+            "SELECT exists(SELECT 1 FROM custom_domains WHERE event = $1)",
+            slug
+        )
+        .fetch_one(db)
+        .await?;
+
+        Ok(result.exists.unwrap_or_default())
+    }
+
+    /// Test if a custom domain exists by its name
+    #[instrument(name = "CustomDomain::exists_by_name", skip(db))]
+    pub async fn exists_by_name(name: &str, db: &PgPool) -> Result<bool> {
+        let result = query!(
+            "SELECT exists(SELECT 1 FROM custom_domains WHERE name = $1)",
+            name
+        )
+        .fetch_one(db)
+        .await?;
+
+        Ok(result.exists.unwrap_or_default())
+    }
+
     /// Get the custom domain for an event
     #[instrument(name = "CustomDomain::find", skip(db))]
     pub async fn find(slug: &str, db: &PgPool) -> Result<Option<CustomDomain>> {
