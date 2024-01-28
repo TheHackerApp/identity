@@ -166,8 +166,8 @@ impl Organizer {
     }
 
     /// Add a user to an organization
-    #[instrument(name = "Organizer::create", skip(db))]
-    pub async fn create(
+    #[instrument(name = "Organizer::add", skip(db))]
+    pub async fn add(
         organization_id: i32,
         user_id: i32,
         role: Role,
@@ -178,6 +178,7 @@ impl Organizer {
             r#"
             INSERT INTO organizers (organization_id, user_id, role) 
             VALUES ($1, $2, $3) 
+            ON CONFLICT (organization_id, user_id) DO UPDATE SET role = excluded.role
             RETURNING organization_id, user_id, role as "role: Role", created_at, updated_at
             "#,
             organization_id,

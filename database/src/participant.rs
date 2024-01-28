@@ -132,12 +132,18 @@ impl Participant {
         Ok(participants)
     }
 
-    /// Map a user to an event
-    #[instrument(name = "Participant::create", skip(db))]
-    pub async fn create(event: &str, user_id: i32, db: &PgPool) -> Result<Participant> {
+    /// Add a user to an event
+    #[instrument(name = "Participant::add", skip(db))]
+    pub async fn add(event: &str, user_id: i32, db: &PgPool) -> Result<Participant> {
+        // The updated_at column needs to be explicitly set so rows are returned
         let participant = query_as!(
             Participant,
-            "INSERT INTO participants (event, user_id) VALUES ($1, $2) RETURNING *",
+            r#"
+            INSERT INTO participants (event, user_id) 
+            VALUES ($1, $2) 
+            ON CONFLICT (event, user_id) DO UPDATE SET updated_at = now()
+            RETURNING *
+            "#,
             event,
             user_id,
         )

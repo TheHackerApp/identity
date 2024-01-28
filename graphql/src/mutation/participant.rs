@@ -29,9 +29,7 @@ impl ParticipantMutation {
         };
 
         let db = ctx.data_unchecked::<PgPool>();
-        Participant::create(&event.slug, user.id, db)
-            .await
-            .extend()?;
+        Participant::add(&event.slug, user.id, db).await.extend()?;
 
         Ok((user, event).into())
     }

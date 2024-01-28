@@ -33,7 +33,7 @@ impl OrganizerMutation {
         };
 
         let db = ctx.data_unchecked::<PgPool>();
-        Organizer::create(organization.id, user.id, input.role, db)
+        Organizer::add(organization.id, user.id, input.role, db)
             .await
             .extend()?;
 
