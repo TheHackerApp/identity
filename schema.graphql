@@ -22,7 +22,7 @@ type AddUserToEventResult {
 	"""
 	The event the user was added to
 	"""
-	event: String
+	event: Event
 	"""
 	Errors that may have occurred while processing the action
 	"""
@@ -51,7 +51,7 @@ type AddUserToOrganizationResult {
 	"""
 	The organization the user was added to
 	"""
-	organization: Int
+	organization: Organization
 	"""
 	Errors that may have occurred while processing the action
 	"""
