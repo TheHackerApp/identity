@@ -3,13 +3,13 @@ use axum::{
     extract::{Form, Path, Query, State},
     response::Redirect,
 };
-use database::{Identity, PgPool, Provider, User};
+use database::{CustomDomain, Identity, PgPool, Provider, User};
 use serde::Deserialize;
 use session::extract::{
     CurrentUser, Mutable, OAuthSession, RegistrationNeededSession, UnauthenticatedSession,
 };
 use tracing::{error, info, instrument, Span};
-use url::Url;
+use url::{Host, Url};
 
 mod client;
 mod error;
@@ -35,11 +35,9 @@ pub(crate) async fn launch(
     State(allowed_redirect_domains): State<AllowedRedirectDomains>,
 ) -> Result<Redirect> {
     if let Some(return_to) = &params.return_to {
-        if !allowed_redirect_domains.can_redirect_to(return_to) {
+        if !redirect_url_is_valid(return_to, &db, allowed_redirect_domains).await? {
             return Err(Error::InvalidParameter("return-to"));
         }
-
-        // TODO: check redirect URL against custom domains
     }
 
     if let Some(provider) = Provider::find_enabled(&slug, &db).await? {
@@ -51,6 +49,33 @@ pub(crate) async fn launch(
         Ok(Redirect::to(&url))
     } else {
         Err(Error::UnknownProvider)
+    }
+}
+
+/// Check if a redirect URL is valid without any additional context
+async fn redirect_url_is_valid(
+    url: &Url,
+    db: &PgPool,
+    allowed_redirect_domains: AllowedRedirectDomains,
+) -> Result<bool> {
+    // Require HTTPS-only URLs (but allows HTTP in development)
+    #[cfg(debug_assertions)]
+    let valid_scheme = url.scheme() == "http" || url.scheme() == "https";
+    #[cfg(not(debug_assertions))]
+    let valid_scheme = url.scheme() == "https";
+    if !valid_scheme {
+        return Ok(false);
+    }
+
+    // Only URLs with domains are allowed
+    let Some(Host::Domain(domain)) = url.host() else {
+        return Ok(false);
+    };
+
+    if allowed_redirect_domains.matches(domain) {
+        Ok(true)
+    } else {
+        Ok(CustomDomain::exists(domain, db).await?)
     }
 }
 

@@ -3,7 +3,7 @@ use axum::extract::FromRef;
 use database::PgPool;
 use globset::GlobSet;
 use std::{collections::HashSet, sync::Arc};
-use url::{Host, Url};
+use url::Url;
 
 macro_rules! state {
     ( $( $field:ident : $type:ty ),+ $(,)? ) => {
@@ -103,17 +103,9 @@ impl From<Url> for FrontendUrl {
 pub(crate) struct AllowedRedirectDomains(Arc<GlobSet>);
 
 impl AllowedRedirectDomains {
-    /// Check if the domain can be redirected to
-    pub fn can_redirect_to(&self, url: &Url) -> bool {
-        #[cfg(debug_assertions)]
-        let valid_scheme = url.scheme() == "http" || url.scheme() == "https";
-        #[cfg(not(debug_assertions))]
-        let valid_scheme = url.scheme() == "https";
-
-        match url.host() {
-            Some(Host::Domain(domain)) => valid_scheme && self.0.is_match(domain),
-            _ => false,
-        }
+    /// Test of a domain matches one that can be redirected to
+    pub fn matches(&self, domain: &str) -> bool {
+        self.0.is_match(domain)
     }
 }
 
