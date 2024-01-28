@@ -611,12 +611,13 @@ checksum = "f7144d30dcf0fafbce74250a3963025d8d52177934239851c917d29f1df280c2"
 
 [[package]]
 name = "context"
-version = "0.4.3"
+version = "0.4.5"
 source = "registry+ssh://git@ssh.shipyard.rs/wafflehacks/crate-index.git"
-checksum = "2103e5a45ca817d1f413204ae621cdf511e734115e001f00cdde32d4acbac35e"
+checksum = "f9a70c7f15149384803dfe86b729b395e9e505591b16e0ac2aeb12993d478bbe"
 dependencies = [
  "async-graphql",
- "axum",
+ "async-trait",
+ "axum-core",
  "headers",
  "http",
  "serde",

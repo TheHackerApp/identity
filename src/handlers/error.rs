@@ -11,6 +11,8 @@ pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 /// Errors that can occur in request handlers
 #[derive(Debug)]
 pub(crate) enum Error {
+    /// Could not find the specified event
+    EventNotFound,
     Database(database::Error),
     Session(session::Error),
 }
@@ -18,6 +20,7 @@ pub(crate) enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::EventNotFound => write!(f, "unknown event"),
             Self::Database(_) => write!(f, "unexpected database error"),
             Self::Session(_) => write!(f, "unexpected session error"),
         }
@@ -29,6 +32,7 @@ impl std::error::Error for Error {
         match self {
             Self::Database(e) => Some(e),
             Self::Session(e) => Some(e),
+            Self::EventNotFound => None,
         }
     }
 }
@@ -38,6 +42,9 @@ impl IntoResponse for Error {
         use std::error::Error as _;
 
         match self {
+            Self::EventNotFound => {
+                return ApiError::response("unknown event", StatusCode::UNPROCESSABLE_ENTITY)
+            }
             Self::Database(error) => match error.source() {
                 Some(source) => error!(%error, %source, "unexpected database error"),
                 None => error!(%error, "unexpected database error"),
@@ -70,6 +77,10 @@ struct ApiError {
 }
 
 impl ApiError {
+    fn response(message: &'static str, status: StatusCode) -> Response {
+        (status, Json(ApiError { message })).into_response()
+    }
+
     fn internal_server_error() -> Response {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
