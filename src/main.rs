@@ -34,6 +34,9 @@ async fn main() -> eyre::Result<()> {
         db,
         config.frontend_url,
         allowed_redirect_domains,
+        config.domain_suffix,
+        config.admin_domains,
+        config.user_domains,
         &config.cookie_signing_key,
     );
 
@@ -108,6 +111,23 @@ struct Config {
     #[arg(long, env = "FRONTEND_URL")]
     frontend_url: Url,
 
+    /// The domain suffix where non-custom domains are hosted
+    #[arg(
+        long,
+        default_value = ".thehacker.app",
+        value_parser = valid_domain_suffix,
+        env = "DOMAIN_SUFFIX",
+    )]
+    domain_suffix: String,
+
+    /// A comma-separated list of domains which require the admin scope
+    #[arg(long, value_delimiter = ',', env = "ADMIN_DOMAINS")]
+    admin_domains: Vec<String>,
+
+    /// A comma-separated list of domains which require the user scope
+    #[arg(long, value_delimiter = ',', env = "USER_DOMAINS")]
+    user_domains: Vec<String>,
+
     /// A comma-separated list of domains that the OAuth flow is allowed to return to
     ///
     /// Allows globs in individual domains. Also automatically includes any registered custom domains
@@ -156,6 +176,18 @@ fn dotenv() -> eyre::Result<()> {
     }
 
     Ok(())
+}
+
+/// Parse the domain suffix from a command line argument
+fn valid_domain_suffix(s: &str) -> eyre::Result<String> {
+    if !s.starts_with('.') {
+        return Err(eyre!("domain suffix must start with a '.'"));
+    }
+    if s.chars().filter(|c| *c == '.').count() < 2 {
+        return Err(eyre!("domain suffix must contain at least a base and TLD"));
+    }
+
+    Ok(s.to_owned())
 }
 
 /// Parse the OpenTelemetry protocol from a command line argument

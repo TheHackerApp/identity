@@ -2,80 +2,60 @@ use crate::handlers::OAuthClient;
 use axum::extract::FromRef;
 use database::PgPool;
 use globset::GlobSet;
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 use url::{Host, Url};
 
-/// State passed to each request handler
-#[derive(Clone)]
-pub(crate) struct AppState {
-    pub allowed_redirect_domains: AllowedRedirectDomains,
-    pub api_url: ApiUrl,
-    pub db: PgPool,
-    pub frontend_url: FrontendUrl,
-    pub oauth_client: OAuthClient,
-    pub schema: graphql::Schema,
-    pub sessions: session::Manager,
+macro_rules! state {
+    ( $( $field:ident : $type:ty ),+ $(,)? ) => {
+        /// State passed to each request handler
+        #[derive(Clone)]
+        pub(crate) struct AppState {
+            $( pub $field: $type, )*
+        }
+
+        $(
+            impl FromRef<AppState> for $type {
+                fn from_ref(state: &AppState) -> Self {
+                    state.$field.clone()
+                }
+            }
+        )*
+    };
+}
+
+state! {
+    allowed_redirect_domains: AllowedRedirectDomains,
+    api_url: ApiUrl,
+    db: PgPool,
+    domains: Domains,
+    frontend_url: FrontendUrl,
+    oauth_client: OAuthClient,
+    schema: graphql::Schema,
+    sessions: session::Manager,
 }
 
 impl AppState {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         api_url: Url,
-        allowed_redirect_domains: GlobSet,
         db: PgPool,
         frontend_url: Url,
         sessions: session::Manager,
+        allowed_redirect_domains: GlobSet,
+        domain_suffix: String,
+        admin_domains: Vec<String>,
+        user_domains: Vec<String>,
     ) -> AppState {
         AppState {
             allowed_redirect_domains: allowed_redirect_domains.into(),
             api_url: api_url.into(),
             db: db.clone(),
+            domains: Domains::new(domain_suffix, admin_domains, user_domains),
             frontend_url: frontend_url.into(),
             oauth_client: OAuthClient::default(),
             schema: graphql::schema(db),
             sessions,
         }
-    }
-}
-
-impl FromRef<AppState> for AllowedRedirectDomains {
-    fn from_ref(state: &AppState) -> Self {
-        state.allowed_redirect_domains.clone()
-    }
-}
-
-impl FromRef<AppState> for ApiUrl {
-    fn from_ref(state: &AppState) -> Self {
-        state.api_url.clone()
-    }
-}
-
-impl FromRef<AppState> for FrontendUrl {
-    fn from_ref(state: &AppState) -> Self {
-        state.frontend_url.clone()
-    }
-}
-
-impl FromRef<AppState> for graphql::Schema {
-    fn from_ref(state: &AppState) -> Self {
-        state.schema.clone()
-    }
-}
-
-impl FromRef<AppState> for OAuthClient {
-    fn from_ref(state: &AppState) -> Self {
-        state.oauth_client.clone()
-    }
-}
-
-impl FromRef<AppState> for PgPool {
-    fn from_ref(state: &AppState) -> Self {
-        state.db.clone()
-    }
-}
-
-impl FromRef<AppState> for session::Manager {
-    fn from_ref(state: &AppState) -> Self {
-        state.sessions.clone()
     }
 }
 
@@ -140,5 +120,42 @@ impl AllowedRedirectDomains {
 impl From<GlobSet> for AllowedRedirectDomains {
     fn from(matcher: GlobSet) -> Self {
         Self(Arc::new(matcher))
+    }
+}
+
+/// A collection of domains to validate against
+#[derive(Debug, Clone)]
+pub(crate) struct Domains(Arc<DomainsInner>);
+
+#[derive(Debug)]
+struct DomainsInner {
+    event_suffix: String,
+    admin: HashSet<String>,
+    user: HashSet<String>,
+}
+
+impl Domains {
+    fn new(domain_suffix: String, admin_domains: Vec<String>, user_domains: Vec<String>) -> Self {
+        let inner = DomainsInner {
+            event_suffix: domain_suffix,
+            admin: admin_domains.into_iter().collect(),
+            user: user_domains.into_iter().collect(),
+        };
+        Domains(Arc::new(inner))
+    }
+
+    /// Get the subdomain of a domain with respect to the current suffix
+    pub fn event_subdomain_for<'a>(&'a self, domain: &'a str) -> Option<&str> {
+        domain.strip_suffix(&self.0.event_suffix)
+    }
+
+    /// Whether the domain requires admin permissions
+    pub fn requires_admin(&self, domain: &str) -> bool {
+        self.0.admin.contains(domain)
+    }
+
+    /// Whether the domain is scoped to a user
+    pub fn requires_user(&self, domain: &str) -> bool {
+        self.0.user.contains(domain)
     }
 }

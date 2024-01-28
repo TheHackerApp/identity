@@ -10,12 +10,16 @@ mod state;
 pub(crate) use state::AppState;
 
 /// Setup the routes
+#[allow(clippy::too_many_arguments)]
 pub fn router(
     api_url: Url,
     cache: RedisConnectionManager,
     db: PgPool,
     frontend_url: Url,
     allowed_redirect_domains: GlobSet,
+    domain_suffix: String,
+    admin_domains: Vec<String>,
+    user_domains: Vec<String>,
     cookie_signing_key: &str,
 ) -> Router {
     let sessions = session::Manager::new(
@@ -27,10 +31,13 @@ pub fn router(
 
     let state = AppState::new(
         api_url,
-        allowed_redirect_domains,
         db,
         frontend_url,
         sessions.clone(),
+        allowed_redirect_domains,
+        domain_suffix,
+        admin_domains,
+        user_domains,
     );
 
     Router::new()
