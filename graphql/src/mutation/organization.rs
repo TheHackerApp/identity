@@ -70,7 +70,7 @@ impl OrganizationMutation {
             if logo.is_empty() {
                 user_errors.push(UserError::new(&["logo"], "cannot be empty"));
             }
-            if !validators::url(&logo) {
+            if !validators::url(logo) {
                 user_errors.push(UserError::new(&["logo"], "must be a URL"));
             }
         }
@@ -79,7 +79,7 @@ impl OrganizationMutation {
             if website.is_empty() {
                 user_errors.push(UserError::new(&["website"], "cannot be empty"));
             }
-            if !validators::url(&website) {
+            if !validators::url(website) {
                 user_errors.push(UserError::new(&["website"], "must be a URL"));
             }
         }
