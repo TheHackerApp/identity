@@ -2,7 +2,7 @@ use super::UserError;
 use async_graphql::{Context, InputObject, Object, Result, ResultExt, SimpleObject};
 use database::{
     loaders::{OrganizationLoader, UserLoader},
-    Organization, Organizer, PgPool, User,
+    Organization, Organizer, PgPool, Role, User,
 };
 use tracing::instrument;
 
@@ -33,7 +33,7 @@ impl OrganizerMutation {
         };
 
         let db = ctx.data_unchecked::<PgPool>();
-        Organizer::create(organization.id, user.id, db)
+        Organizer::create(organization.id, user.id, input.role, db)
             .await
             .extend()?;
 
@@ -63,6 +63,9 @@ struct AddUserToOrganizationInput {
     organization_id: i32,
     /// The ID of the user to add
     user_id: i32,
+    /// The role the user should have
+    #[graphql(default)]
+    role: Role,
 }
 
 #[derive(Debug, SimpleObject)]

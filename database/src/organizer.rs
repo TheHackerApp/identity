@@ -167,16 +167,22 @@ impl Organizer {
 
     /// Add a user to an organization
     #[instrument(name = "Organizer::create", skip(db))]
-    pub async fn create(organization_id: i32, user_id: i32, db: &PgPool) -> Result<Organizer> {
+    pub async fn create(
+        organization_id: i32,
+        user_id: i32,
+        role: Role,
+        db: &PgPool,
+    ) -> Result<Organizer> {
         let organizer = query_as!(
             Organizer,
             r#"
-            INSERT INTO organizers (organization_id, user_id) 
-            VALUES ($1, $2) 
+            INSERT INTO organizers (organization_id, user_id, role) 
+            VALUES ($1, $2, $3) 
             RETURNING organization_id, user_id, role as "role: Role", created_at, updated_at
             "#,
             organization_id,
             user_id,
+            role as _,
         )
         .fetch_one(db)
         .await?;

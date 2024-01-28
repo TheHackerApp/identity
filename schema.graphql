@@ -41,6 +41,10 @@ input AddUserToOrganizationInput {
 	The ID of the user to add
 	"""
 	userId: Int!
+	"""
+	The role the user should have
+	"""
+	role: Role! = ORGANIZER
 }
 
 type AddUserToOrganizationResult {
