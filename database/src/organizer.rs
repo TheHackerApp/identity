@@ -5,12 +5,27 @@ use crate::{
     Organization, User,
 };
 #[cfg(feature = "graphql")]
-use async_graphql::{ComplexObject, Context, ResultExt, SimpleObject};
+use async_graphql::{ComplexObject, Context, Enum, ResultExt, SimpleObject};
 use chrono::{DateTime, Utc};
 use futures::stream::TryStreamExt;
 use sqlx::{query, query_as, PgPool};
 use std::collections::HashMap;
 use tracing::instrument;
+
+/// A role that can be applied to an organizer
+// TODO: consider switching to a bit flags permission implementation a la Discord
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, sqlx::Type)]
+#[cfg_attr(feature = "graphql", derive(Enum))]
+#[sqlx(rename_all = "lowercase", type_name = "organizer_role")]
+pub enum Role {
+    /// Has full permissions within the organization and event
+    Director,
+    /// An elevated user within the organization that change event and organization settings
+    Manager,
+    /// A normal user within the organization
+    #[default]
+    Organizer,
+}
 
 /// Maps a user to an organization as an organizer
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -23,6 +38,8 @@ pub struct Organizer {
     /// The user ID
     #[cfg_attr(feature = "graphql", graphql(skip))]
     pub user_id: i32,
+    /// The permissions the user has
+    pub role: Role,
     /// When the mapping was created
     pub created_at: DateTime<Utc>,
     /// When the mapping was last updated
@@ -68,7 +85,11 @@ impl Organizer {
     ) -> Result<HashMap<i32, Vec<Organizer>>> {
         let by_user_id = query_as!(
             Organizer,
-            "SELECT * FROM organizers WHERE user_id = ANY($1)",
+            r#"
+            SELECT organization_id, user_id, role as "role: Role", created_at, updated_at
+            FROM organizers
+            WHERE user_id = ANY($1)
+            "#,
             user_ids,
         )
         .fetch(db)
@@ -90,7 +111,11 @@ impl Organizer {
     ) -> Result<HashMap<i32, Vec<Organizer>>> {
         let by_organization_id = query_as!(
             Organizer,
-            "SELECT * FROM organizers WHERE organization_id = ANY($1)",
+            r#"
+            SELECT organization_id, user_id, role as "role: Role", created_at, updated_at
+            FROM organizers
+            WHERE organization_id = ANY($1)
+            "#,
             organization_ids
         )
         .fetch(db)
@@ -109,7 +134,11 @@ impl Organizer {
     pub async fn for_user(user_id: i32, db: &PgPool) -> Result<Vec<Organizer>> {
         let organizers = query_as!(
             Organizer,
-            "SELECT * FROM organizers WHERE user_id = $1",
+            r#"
+            SELECT organization_id, user_id, role as "role: Role", created_at, updated_at
+            FROM organizers
+            WHERE user_id = $1
+            "#,
             user_id,
         )
         .fetch_all(db)
@@ -123,7 +152,11 @@ impl Organizer {
     pub async fn for_organization(organization_id: i32, db: &PgPool) -> Result<Vec<Organizer>> {
         let organizers = query_as!(
             Organizer,
-            "SELECT * FROM organizers WHERE organization_id = $1",
+            r#"
+            SELECT organization_id, user_id, role as "role: Role", created_at, updated_at
+            FROM organizers
+            WHERE organization_id = $1
+            "#,
             organization_id,
         )
         .fetch_all(db)
@@ -137,7 +170,11 @@ impl Organizer {
     pub async fn create(organization_id: i32, user_id: i32, db: &PgPool) -> Result<Organizer> {
         let organizer = query_as!(
             Organizer,
-            "INSERT INTO organizers (organization_id, user_id) VALUES ($1, $2) RETURNING *",
+            r#"
+            INSERT INTO organizers (organization_id, user_id) 
+            VALUES ($1, $2) 
+            RETURNING organization_id, user_id, role as "role: Role", created_at, updated_at
+            "#,
             organization_id,
             user_id,
         )

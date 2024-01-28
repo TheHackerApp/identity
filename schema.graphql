@@ -404,6 +404,10 @@ Maps a user to an organization as an organizer
 """
 type Organizer {
 	"""
+	The permissions the user has
+	"""
+	role: Role!
+	"""
 	When the mapping was created
 	"""
 	createdAt: DateTime!
@@ -564,6 +568,24 @@ type RemoveUserFromOrganizationResult {
 	Errors that may have occurred while processing the action
 	"""
 	userErrors: [UserError!]!
+}
+
+"""
+A role that can be applied to an organizer
+"""
+enum Role {
+	"""
+	Has full permissions within the organization and event
+	"""
+	DIRECTOR
+	"""
+	An elevated user within the organization that change event and organization settings
+	"""
+	MANAGER
+	"""
+	A normal user within the organization
+	"""
+	ORGANIZER
 }
 
 

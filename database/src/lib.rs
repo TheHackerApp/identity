@@ -27,7 +27,7 @@ pub use custom_domain::CustomDomain;
 pub use event::Event;
 pub use identity::Identity;
 pub use organization::Organization;
-pub use organizer::Organizer;
+pub use organizer::{Organizer, Role};
 pub use participant::Participant;
 pub use provider::{Provider, ProviderConfiguration};
 pub use sqlx::PgPool;
