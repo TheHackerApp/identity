@@ -58,12 +58,12 @@ impl CustomDomain {
         Ok(by_slug)
     }
 
-    /// Test if a custom domain exists for an event
+    /// Test if a custom domain exists
     #[instrument(name = "CustomDomain::exists", skip(db))]
-    pub async fn exists(slug: &str, db: &PgPool) -> Result<bool> {
+    pub async fn exists(name: &str, db: &PgPool) -> Result<bool> {
         let result = query!(
-            "SELECT exists(SELECT 1 FROM custom_domains WHERE event = $1)",
-            slug
+            "SELECT exists(SELECT 1 FROM custom_domains WHERE name = $1)",
+            name
         )
         .fetch_one(db)
         .await?;
