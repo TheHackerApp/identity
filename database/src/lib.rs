@@ -34,6 +34,8 @@ pub use sqlx::PgPool;
 pub use types::Json;
 pub use user::User;
 
+pub use sqlx::Error as SqlxError;
+
 pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Connect to the database and ensure it works
@@ -56,13 +58,13 @@ pub async fn connect(url: &str) -> eyre::Result<PgPool> {
 
 /// Represents the different way the database can fail
 #[derive(Clone)]
-pub struct Error(Arc<sqlx::Error>);
+pub struct Error(Arc<SqlxError>);
 
 impl Error {
     /// Returns whether the error kind is a violation of a unique/primary key constraint.
     pub fn is_unique_violation(&self) -> bool {
         match self.0.as_ref() {
-            sqlx::Error::Database(e) => e.is_unique_violation(),
+            SqlxError::Database(e) => e.is_unique_violation(),
             _ => false,
         }
     }
@@ -100,8 +102,8 @@ impl async_graphql::ErrorExtensions for Error {
     }
 }
 
-impl From<sqlx::Error> for Error {
-    fn from(error: sqlx::Error) -> Self {
+impl From<SqlxError> for Error {
+    fn from(error: SqlxError) -> Self {
         Self(Arc::new(error))
     }
 }
