@@ -8,7 +8,7 @@ use crate::{
 use async_graphql::{ComplexObject, Context, ResultExt};
 use chrono::{DateTime, Utc};
 use futures::stream::TryStreamExt;
-use sqlx::{query, query_as, PgPool, QueryBuilder};
+use sqlx::{query, query_as, Executor, QueryBuilder};
 use std::collections::HashMap;
 use tracing::instrument;
 
@@ -36,7 +36,11 @@ pub struct User {
 impl User {
     /// Load all the users by their IDs, for use in dataloaders
     #[instrument(name = "User::load", skip(db))]
-    pub(crate) async fn load(ids: &[i32], db: &PgPool) -> Result<HashMap<i32, User>> {
+    pub(crate) async fn load<'c, 'e, E>(ids: &[i32], db: E) -> Result<HashMap<i32, User>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_id = query_as!(User, "SELECT * FROM users WHERE id = ANY($1)", ids)
             .fetch(db)
             .map_ok(|user| (user.id, user))
@@ -47,10 +51,14 @@ impl User {
 
     /// Load all the users by their primary emails, for use in dataloaders
     #[instrument(name = "User::load_by_primary_email", skip(db))]
-    pub(crate) async fn load_by_primary_email(
+    pub(crate) async fn load_by_primary_email<'c, 'e, E>(
         emails: &[String],
-        db: &PgPool,
-    ) -> Result<HashMap<String, User>> {
+        db: E,
+    ) -> Result<HashMap<String, User>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_primary_email = query_as!(
             User,
             "SELECT * FROM users WHERE primary_email = ANY($1)",
@@ -65,7 +73,11 @@ impl User {
 
     /// Check if a user exists
     #[instrument(name = "User::exists", skip(db))]
-    pub async fn exists(id: i32, db: &PgPool) -> Result<bool> {
+    pub async fn exists<'c, 'e, E>(id: i32, db: E) -> Result<bool>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let result = query!("SELECT exists(SELECT 1 FROM users WHERE id = $1)", id)
             .fetch_one(db)
             .await?;
@@ -75,7 +87,11 @@ impl User {
 
     /// Get a user by it's ID
     #[instrument(name = "User::find", skip(db))]
-    pub async fn find(id: i32, db: &PgPool) -> Result<Option<User>> {
+    pub async fn find<'c, 'e, E>(id: i32, db: E) -> Result<Option<User>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let user = query_as!(User, "SELECT * FROM users WHERE id = $1", id)
             .fetch_optional(db)
             .await?;
@@ -84,7 +100,11 @@ impl User {
 
     /// Get a user by it's primary email
     #[instrument(name = "User::find_by_primary_email", skip(db))]
-    pub async fn find_by_primary_email(email: &str, db: &PgPool) -> Result<Option<User>> {
+    pub async fn find_by_primary_email<'c, 'e, E>(email: &str, db: E) -> Result<Option<User>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let user = query_as!(User, "SELECT * FROM users WHERE primary_email = $1", email)
             .fetch_optional(db)
             .await?;
@@ -93,12 +113,16 @@ impl User {
 
     /// Create a new user
     #[instrument(name = "User::create", skip(db))]
-    pub async fn create(
+    pub async fn create<'c, 'e, E>(
         given_name: &str,
         family_name: &str,
         primary_email: &str,
-        db: &PgPool,
-    ) -> Result<User> {
+        db: E,
+    ) -> Result<User>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let user = query_as!(
             User,
             r#"
@@ -121,7 +145,11 @@ impl User {
 
     /// Delete a user by it's ID
     #[instrument(name = "User::delete", skip(db))]
-    pub async fn delete(id: i32, db: &PgPool) -> Result<()> {
+    pub async fn delete<'c, 'e, E>(id: i32, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         query!("DELETE FROM users WHERE id = $1", id)
             .execute(db)
             .await?;
@@ -232,7 +260,11 @@ impl<'u> UserUpdater<'u> {
 
     /// Perform the update
     #[instrument(name = "User::update", skip_all, fields(self.id = %self.user.id))]
-    pub async fn save(self, db: &PgPool) -> Result<()> {
+    pub async fn save<'c, 'e, E>(self, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         if self.given_name.is_none() && self.family_name.is_none() && self.primary_email.is_none() {
             // nothing was changed
             return Ok(());

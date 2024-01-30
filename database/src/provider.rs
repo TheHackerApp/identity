@@ -2,7 +2,7 @@ use crate::{Json, Result};
 use chrono::{DateTime, Utc};
 use futures::stream::TryStreamExt;
 use serde::{Deserialize, Serialize};
-use sqlx::{query, query_as, PgPool, QueryBuilder};
+use sqlx::{query, query_as, Executor, QueryBuilder};
 use std::{
     collections::HashMap,
     fmt::{Debug, Formatter},
@@ -92,7 +92,11 @@ impl Debug for ProviderConfiguration {
 impl Provider {
     /// Get all the providers
     #[instrument(name = "Provider::all", skip_all)]
-    pub async fn all(db: &PgPool) -> Result<Vec<Provider>> {
+    pub async fn all<'c, 'e, E>(db: E) -> Result<Vec<Provider>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let providers = query_as!(
             Provider,
             r#"
@@ -110,7 +114,11 @@ impl Provider {
 
     /// Get all the enabled providers
     #[instrument(name = "Provider::all_enabled", skip_all)]
-    pub async fn all_enabled(db: &PgPool) -> Result<Vec<Provider>> {
+    pub async fn all_enabled<'c, 'e, E>(db: E) -> Result<Vec<Provider>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let providers = query_as!(
             Provider,
             r#"
@@ -129,7 +137,14 @@ impl Provider {
 
     /// Load all the providers by their slugs, for use in dataloaders
     #[instrument(name = "Provider::load", skip(db))]
-    pub(crate) async fn load(slugs: &[String], db: &PgPool) -> Result<HashMap<String, Provider>> {
+    pub(crate) async fn load<'c, 'e, E>(
+        slugs: &[String],
+        db: E,
+    ) -> Result<HashMap<String, Provider>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_slug = query_as!(
             Provider,
             r#"
@@ -151,7 +166,11 @@ impl Provider {
 
     /// Check if a provider exists
     #[instrument(name = "Provider::exists", skip(db))]
-    pub async fn exists(slug: &str, db: &PgPool) -> Result<bool> {
+    pub async fn exists<'c, 'e, E>(slug: &str, db: E) -> Result<bool>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let result = query!(
             "SELECT exists(SELECT 1 FROM providers WHERE slug = $1)",
             slug
@@ -164,7 +183,11 @@ impl Provider {
 
     /// Get a provider by it's slug
     #[instrument(name = "Provider::find", skip(db))]
-    pub async fn find(slug: &str, db: &PgPool) -> Result<Option<Provider>> {
+    pub async fn find<'c, 'e, E>(slug: &str, db: E) -> Result<Option<Provider>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let provider = query_as!(
             Provider,
             r#"
@@ -184,7 +207,11 @@ impl Provider {
 
     /// Get an enabled provider by it's slug
     #[instrument(name = "Provider::find_enabled", skip(db))]
-    pub async fn find_enabled(slug: &str, db: &PgPool) -> Result<Option<Provider>> {
+    pub async fn find_enabled<'c, 'e, E>(slug: &str, db: E) -> Result<Option<Provider>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let provider = query_as!(
             Provider,
             r#"
@@ -204,13 +231,17 @@ impl Provider {
 
     /// Create a new provider
     #[instrument(name = "Provider::create", skip(db))]
-    pub async fn create(
+    pub async fn create<'c, 'e, E>(
         slug: &str,
         name: &str,
         icon: &str,
         config: ProviderConfiguration,
-        db: &PgPool,
-    ) -> Result<Provider> {
+        db: E,
+    ) -> Result<Provider>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let provider = query_as!(
             Provider,
             r#"
@@ -238,7 +269,11 @@ impl Provider {
 
     /// Delete a provider by it's slug
     #[instrument(name = "Provider::delete", skip(db))]
-    pub async fn delete(slug: &str, db: &PgPool) -> Result<()> {
+    pub async fn delete<'c, 'e, E>(slug: &str, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         query!("DELETE FROM providers WHERE slug = $1", slug)
             .execute(db)
             .await?;
@@ -320,7 +355,11 @@ impl<'p> ProviderUpdater<'p> {
 
     /// Perform the update
     #[instrument(name = "Provider::update", skip_all, fields(self.slug = %self.provider.slug))]
-    pub async fn save(self, db: &PgPool) -> Result<()> {
+    pub async fn save<'c, 'e, E>(self, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         if self.enabled.is_none()
             && self.name.is_none()
             && self.icon.is_none()

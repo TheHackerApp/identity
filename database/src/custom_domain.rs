@@ -6,7 +6,7 @@ use async_graphql::ResultExt;
 use chrono::{DateTime, Utc};
 #[cfg(feature = "graphql")]
 use futures::TryStreamExt;
-use sqlx::{query, query_as, PgPool, QueryBuilder};
+use sqlx::{query, query_as, Executor, QueryBuilder};
 #[cfg(feature = "graphql")]
 use std::collections::HashMap;
 use tracing::instrument;
@@ -31,7 +31,11 @@ pub struct CustomDomain {
 impl CustomDomain {
     /// Get all the custom domains
     #[instrument(name = "CustomDomain::all", skip_all)]
-    pub async fn all(db: &PgPool) -> Result<Vec<CustomDomain>> {
+    pub async fn all<'c, 'e, E>(db: E) -> Result<Vec<CustomDomain>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let domains = query_as!(CustomDomain, "SELECT * FROM custom_domains")
             .fetch_all(db)
             .await?;
@@ -41,10 +45,14 @@ impl CustomDomain {
 
     /// Load all the custom domains by their events' slugs, for use in dataloaders
     #[cfg(feature = "graphql")]
-    pub(crate) async fn load(
+    pub(crate) async fn load<'c, 'e, E>(
         slugs: &[String],
-        db: &PgPool,
-    ) -> Result<HashMap<String, CustomDomain>> {
+        db: E,
+    ) -> Result<HashMap<String, CustomDomain>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_slug = query_as!(
             CustomDomain,
             "SELECT * FROM custom_domains WHERE event = ANY($1)",
@@ -60,7 +68,11 @@ impl CustomDomain {
 
     /// Test if a custom domain exists
     #[instrument(name = "CustomDomain::exists", skip(db))]
-    pub async fn exists(name: &str, db: &PgPool) -> Result<bool> {
+    pub async fn exists<'c, 'e, E>(name: &str, db: E) -> Result<bool>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let result = query!(
             "SELECT exists(SELECT 1 FROM custom_domains WHERE name = $1)",
             name
@@ -73,7 +85,11 @@ impl CustomDomain {
 
     /// Test if a custom domain exists by its name
     #[instrument(name = "CustomDomain::exists_by_name", skip(db))]
-    pub async fn exists_by_name(name: &str, db: &PgPool) -> Result<bool> {
+    pub async fn exists_by_name<'c, 'e, E>(name: &str, db: E) -> Result<bool>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let result = query!(
             "SELECT exists(SELECT 1 FROM custom_domains WHERE name = $1)",
             name
@@ -86,7 +102,11 @@ impl CustomDomain {
 
     /// Get the custom domain for an event
     #[instrument(name = "CustomDomain::find", skip(db))]
-    pub async fn find(slug: &str, db: &PgPool) -> Result<Option<CustomDomain>> {
+    pub async fn find<'c, 'e, E>(slug: &str, db: E) -> Result<Option<CustomDomain>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let domain = query_as!(
             CustomDomain,
             "SELECT * FROM custom_domains WHERE event = $1",
@@ -100,7 +120,11 @@ impl CustomDomain {
 
     /// Get a custom domain by it's name
     #[instrument(name = "CustomDomain::find_by_name", skip(db))]
-    pub async fn find_by_name(name: &str, db: &PgPool) -> Result<Option<CustomDomain>> {
+    pub async fn find_by_name<'c, 'e, E>(name: &str, db: E) -> Result<Option<CustomDomain>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let domain = query_as!(
             CustomDomain,
             "SELECT * FROM custom_domains WHERE name = $1",
@@ -114,7 +138,11 @@ impl CustomDomain {
 
     /// Create a new custom domain
     #[instrument(name = "CustomDomain::create", skip(db))]
-    pub async fn create(name: &str, event: &str, db: &PgPool) -> Result<CustomDomain> {
+    pub async fn create<'c, 'e, E>(name: &str, event: &str, db: E) -> Result<CustomDomain>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let domain = query_as!(
             CustomDomain,
             "INSERT INTO custom_domains (name, event) VALUES ($1, $2) RETURNING *",
@@ -134,7 +162,11 @@ impl CustomDomain {
 
     /// Delete the custom domain for an event
     #[instrument(name = "CustomDomain::delete", skip(db))]
-    pub async fn delete(slug: &str, db: &PgPool) -> Result<()> {
+    pub async fn delete<'c, 'e, E>(slug: &str, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         query!("DELETE FROM custom_domains WHERE event = $1", slug)
             .execute(db)
             .await?;
@@ -188,7 +220,11 @@ impl<'c> CustomDomainUpdater<'c> {
 
     /// Perform the update
     #[instrument(name = "CustomDomain::update", skip_all, fields(self.event = %self.custom_domain.event))]
-    pub async fn save(self, db: &PgPool) -> Result<()> {
+    pub async fn save<'conn, 'e, E>(self, db: E) -> Result<()>
+    where
+        'conn: 'e,
+        E: 'e + Executor<'conn, Database = sqlx::Postgres>,
+    {
         if self.name.is_none() {
             // nothing changed
             return Ok(());

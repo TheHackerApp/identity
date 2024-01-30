@@ -8,7 +8,7 @@ use crate::{
 use async_graphql::{ComplexObject, Context, ResultExt, SimpleObject};
 use chrono::{DateTime, Utc};
 use futures::stream::TryStreamExt;
-use sqlx::{query, query_as, PgPool};
+use sqlx::{query, query_as, Executor};
 use std::collections::HashMap;
 use tracing::instrument;
 
@@ -62,10 +62,14 @@ impl Participant {
 impl Participant {
     /// Load all the event slugs for a user, for use in dataloaders
     #[instrument(name = "Participant::load_for_user", skip(db))]
-    pub(crate) async fn load_for_user(
+    pub(crate) async fn load_for_user<'c, 'e, E>(
         user_ids: &[i32],
-        db: &PgPool,
-    ) -> Result<HashMap<i32, Vec<Participant>>> {
+        db: E,
+    ) -> Result<HashMap<i32, Vec<Participant>>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_user_id = query_as!(
             Participant,
             "SELECT * FROM participants WHERE user_id = ANY($1)",
@@ -84,10 +88,14 @@ impl Participant {
 
     /// Load all the participants for an event, for use in dataloaders
     #[instrument(name = "Participant::load_for_event", skip(db))]
-    pub(crate) async fn load_for_event(
+    pub(crate) async fn load_for_event<'c, 'e, E>(
         slugs: &[String],
-        db: &PgPool,
-    ) -> Result<HashMap<String, Vec<Participant>>> {
+        db: E,
+    ) -> Result<HashMap<String, Vec<Participant>>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_event = query_as!(
             Participant,
             "SELECT * FROM participants WHERE event = ANY($1)",
@@ -106,7 +114,11 @@ impl Participant {
 
     /// Get all the events a user is participating in
     #[instrument(name = "Participant::for_user", skip(db))]
-    pub async fn for_user(user_id: i32, db: &PgPool) -> Result<Vec<Participant>> {
+    pub async fn for_user<'c, 'e, E>(user_id: i32, db: E) -> Result<Vec<Participant>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let participants = query_as!(
             Participant,
             "SELECT * FROM participants WHERE user_id = $1",
@@ -120,7 +132,11 @@ impl Participant {
 
     /// Get all the users participating in an event
     #[instrument(name = "Participant::for_event", skip(db))]
-    pub async fn for_event(event: &str, db: &PgPool) -> Result<Vec<Participant>> {
+    pub async fn for_event<'c, 'e, E>(event: &str, db: E) -> Result<Vec<Participant>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let participants = query_as!(
             Participant,
             "SELECT * FROM participants WHERE event = $1",
@@ -134,7 +150,11 @@ impl Participant {
 
     /// Add a user to an event
     #[instrument(name = "Participant::add", skip(db))]
-    pub async fn add(event: &str, user_id: i32, db: &PgPool) -> Result<Participant> {
+    pub async fn add<'c, 'e, E>(event: &str, user_id: i32, db: E) -> Result<Participant>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         // The updated_at column needs to be explicitly set so rows are returned
         let participant = query_as!(
             Participant,
@@ -155,7 +175,11 @@ impl Participant {
 
     /// Delete a user from an event
     #[instrument(name = "Participant::delete", skip(db))]
-    pub async fn delete(event: &str, user_id: i32, db: &PgPool) -> Result<()> {
+    pub async fn delete<'c, 'e, E>(event: &str, user_id: i32, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         query!(
             "DELETE FROM participants WHERE event = $1 AND user_id = $2",
             event,

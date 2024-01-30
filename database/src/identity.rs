@@ -1,7 +1,7 @@
 use crate::Result;
 use chrono::{DateTime, Utc};
 use futures::stream::TryStreamExt;
-use sqlx::{query, query_as, PgPool};
+use sqlx::{query, query_as, Executor};
 use std::collections::HashMap;
 use tracing::instrument;
 
@@ -28,10 +28,14 @@ pub struct Identity {
 impl Identity {
     /// Load all the identities for a user, for use in dataloaders
     #[instrument(name = "Identity::load_for_user", skip(db))]
-    pub(crate) async fn load_for_user(
+    pub(crate) async fn load_for_user<'c, 'e, E>(
         user_ids: &[i32],
-        db: &PgPool,
-    ) -> Result<HashMap<i32, Vec<Identity>>> {
+        db: E,
+    ) -> Result<HashMap<i32, Vec<Identity>>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_user_id = query_as!(
             Identity,
             "SELECT * FROM identities WHERE user_id = ANY($1)",
@@ -49,7 +53,11 @@ impl Identity {
 
     /// Get all the identities associated with a provider
     #[instrument(name = "Identity::for_user", skip(db))]
-    pub async fn for_user(user_id: i32, db: &PgPool) -> Result<Vec<Identity>> {
+    pub async fn for_user<'c, 'e, E>(user_id: i32, db: E) -> Result<Vec<Identity>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let identities = query_as!(
             Identity,
             "SELECT * FROM identities WHERE user_id = $1",
@@ -62,11 +70,15 @@ impl Identity {
 
     /// Find an identity by it's provider and remote id
     #[instrument(name = "Identity::find_by_remote_id", skip(db))]
-    pub async fn find_by_remote_id(
+    pub async fn find_by_remote_id<'c, 'e, E>(
         provider: &str,
         remote_id: &str,
-        db: &PgPool,
-    ) -> Result<Option<Identity>> {
+        db: E,
+    ) -> Result<Option<Identity>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let identity = query_as!(
             Identity,
             "SELECT * FROM identities WHERE provider = $1 AND remote_id = $2",
@@ -80,13 +92,17 @@ impl Identity {
 
     /// Link a user to a provider
     #[instrument(name = "Identity::link", skip(db))]
-    pub async fn link(
+    pub async fn link<'c, 'e, E>(
         provider: &str,
         user_id: i32,
         remote_id: &str,
         email: &str,
-        db: &PgPool,
-    ) -> Result<Identity> {
+        db: E,
+    ) -> Result<Identity>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let identity = query_as!(
             Identity,
             r#"
@@ -106,7 +122,11 @@ impl Identity {
 
     /// Update the email associated with an identity
     #[instrument(name = "Identity::update_email", skip(self, db), fields(%self.provider, %self.user_id))]
-    pub async fn update_email(&mut self, email: String, db: &PgPool) -> Result<()> {
+    pub async fn update_email<'c, 'e, E>(&mut self, email: String, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         query!(
             "UPDATE identities SET email = $3 WHERE provider = $1 AND user_id = $2",
             &self.provider,
@@ -123,7 +143,11 @@ impl Identity {
 
     /// Unlink a user from a provider
     #[instrument(name = "Identity::unlink", skip(db))]
-    pub async fn unlink(provider: &str, user_id: i32, db: &PgPool) -> Result<()> {
+    pub async fn unlink<'c, 'e, E>(provider: &str, user_id: i32, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         query!(
             "DELETE FROM identities WHERE provider = $1 AND user_id = $2",
             provider,

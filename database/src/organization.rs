@@ -9,7 +9,7 @@ use async_graphql::{Context, ResultExt};
 use chrono::{DateTime, Utc};
 #[cfg(feature = "graphql")]
 use futures::TryStreamExt;
-use sqlx::{query, query_as, PgPool, QueryBuilder};
+use sqlx::{query, query_as, Executor, QueryBuilder};
 #[cfg(feature = "graphql")]
 use std::collections::HashMap;
 use tracing::instrument;
@@ -39,7 +39,11 @@ pub struct Organization {
 impl Organization {
     /// Get all the registered organizations
     #[instrument(name = "Organization::all", skip_all)]
-    pub async fn all(db: &PgPool) -> Result<Vec<Organization>> {
+    pub async fn all<'c, 'e, E>(db: E) -> Result<Vec<Organization>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let organizations = query_as!(Organization, "SELECT * FROM organizations")
             .fetch_all(db)
             .await?;
@@ -49,7 +53,11 @@ impl Organization {
 
     /// Load all the organizations by the IDs, for use in dataloaders
     #[cfg(feature = "graphql")]
-    pub(crate) async fn load(ids: &[i32], db: &PgPool) -> Result<HashMap<i32, Organization>> {
+    pub(crate) async fn load<'c, 'e, E>(ids: &[i32], db: E) -> Result<HashMap<i32, Organization>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_id = query_as!(
             Organization,
             "SELECT * FROM organizations WHERE id = ANY($1)",
@@ -64,7 +72,11 @@ impl Organization {
 
     /// Check if an organization exists
     #[instrument(name = "Organization::exists", skip(db))]
-    pub async fn exists(id: i32, db: &PgPool) -> Result<bool> {
+    pub async fn exists<'c, 'e, E>(id: i32, db: E) -> Result<bool>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let result = query!(
             "SELECT exists(SELECT 1 FROM organizations WHERE id = $1)",
             id
@@ -77,7 +89,11 @@ impl Organization {
 
     /// Get an organization by it's ID
     #[instrument(name = "Organization::find", skip(db))]
-    pub async fn find(id: i32, db: &PgPool) -> Result<Option<Organization>> {
+    pub async fn find<'c, 'e, E>(id: i32, db: E) -> Result<Option<Organization>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let organization = query_as!(
             Organization,
             "SELECT * FROM organizations WHERE id = $1",
@@ -91,7 +107,11 @@ impl Organization {
 
     /// Create a new organization
     #[instrument(name = "Organization::create", skip(db))]
-    pub async fn create(name: &str, owner_id: i32, db: &PgPool) -> Result<Organization> {
+    pub async fn create<'c, 'e, E>(name: &str, owner_id: i32, db: E) -> Result<Organization>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let organization = query_as!(
             Organization,
             "INSERT INTO organizations (name, owner_id) VALUES ($1, $2) RETURNING *",
@@ -111,7 +131,11 @@ impl Organization {
 
     /// Delete an organization
     #[instrument(name = "Organization::delete", skip(db))]
-    pub async fn delete(id: i32, db: &PgPool) -> Result<()> {
+    pub async fn delete<'c, 'e, E>(id: i32, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         query!("DELETE FROM organizations WHERE id = $1", id)
             .execute(db)
             .await?;
@@ -217,7 +241,11 @@ impl<'o> OrganizationUpdater<'o> {
 
     /// Perform the update
     #[instrument(name = "Organization::update", skip_all, fields(self.id = self.organization.id))]
-    pub async fn save(self, db: &PgPool) -> Result<()> {
+    pub async fn save<'c, 'e, E>(self, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         if self.name.is_none()
             && self.logo.is_none()
             && self.website.is_none()

@@ -8,7 +8,7 @@ use crate::{
 use async_graphql::{ComplexObject, Context, Enum, ResultExt, SimpleObject};
 use chrono::{DateTime, Utc};
 use futures::stream::TryStreamExt;
-use sqlx::{query, query_as, PgPool};
+use sqlx::{query, query_as, Executor};
 use std::collections::HashMap;
 use tracing::instrument;
 
@@ -79,10 +79,14 @@ impl Organizer {
 impl Organizer {
     /// Load all the organizer info for a user, for use in dataloaders
     #[instrument(name = "Organizer::load_for_user", skip(db))]
-    pub(crate) async fn load_for_user(
+    pub(crate) async fn load_for_user<'c, 'e, E>(
         user_ids: &[i32],
-        db: &PgPool,
-    ) -> Result<HashMap<i32, Vec<Organizer>>> {
+        db: E,
+    ) -> Result<HashMap<i32, Vec<Organizer>>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_user_id = query_as!(
             Organizer,
             r#"
@@ -105,10 +109,14 @@ impl Organizer {
 
     /// Load all the organizer info for an organization, for use in dataloaders
     #[instrument(name = "Organizer::load_for_organization")]
-    pub(crate) async fn load_for_organization(
+    pub(crate) async fn load_for_organization<'c, 'e, E>(
         organization_ids: &[i32],
-        db: &PgPool,
-    ) -> Result<HashMap<i32, Vec<Organizer>>> {
+        db: E,
+    ) -> Result<HashMap<i32, Vec<Organizer>>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_organization_id = query_as!(
             Organizer,
             r#"
@@ -131,7 +139,11 @@ impl Organizer {
 
     /// Get all the organizations a user is part of
     #[instrument(name = "Organizer::for_user", skip(db))]
-    pub async fn for_user(user_id: i32, db: &PgPool) -> Result<Vec<Organizer>> {
+    pub async fn for_user<'c, 'e, E>(user_id: i32, db: E) -> Result<Vec<Organizer>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let organizers = query_as!(
             Organizer,
             r#"
@@ -149,7 +161,11 @@ impl Organizer {
 
     /// Get all the users in an organization
     #[instrument(name = "Organizer::for_organization", skip(db))]
-    pub async fn for_organization(organization_id: i32, db: &PgPool) -> Result<Vec<Organizer>> {
+    pub async fn for_organization<'c, 'e, E>(organization_id: i32, db: E) -> Result<Vec<Organizer>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let organizers = query_as!(
             Organizer,
             r#"
@@ -167,12 +183,16 @@ impl Organizer {
 
     /// Add a user to an organization
     #[instrument(name = "Organizer::add", skip(db))]
-    pub async fn add(
+    pub async fn add<'c, 'e, E>(
         organization_id: i32,
         user_id: i32,
         role: Role,
-        db: &PgPool,
-    ) -> Result<Organizer> {
+        db: E,
+    ) -> Result<Organizer>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let organizer = query_as!(
             Organizer,
             r#"
@@ -193,7 +213,11 @@ impl Organizer {
 
     /// Delete a user from an organization
     #[instrument(name = "Organizer::delete", skip(db))]
-    pub async fn delete(organization_id: i32, user_id: i32, db: &PgPool) -> Result<()> {
+    pub async fn delete<'c, 'e, E>(organization_id: i32, user_id: i32, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         query!(
             "DELETE FROM organizers WHERE organization_id = $1 AND user_id = $2",
             organization_id,

@@ -9,7 +9,7 @@ use async_graphql::ResultExt;
 use chrono::{DateTime, Utc};
 #[cfg(feature = "graphql")]
 use futures::TryStreamExt;
-use sqlx::{query, query_as, PgPool, QueryBuilder};
+use sqlx::{query, query_as, Executor, QueryBuilder};
 #[cfg(feature = "graphql")]
 use std::collections::HashMap;
 use tracing::instrument;
@@ -37,7 +37,11 @@ pub struct Event {
 impl Event {
     /// Get all the registered events
     #[instrument(name = "Event::all", skip_all)]
-    pub async fn all(db: &PgPool) -> Result<Vec<Event>> {
+    pub async fn all<'c, 'e, E>(db: E) -> Result<Vec<Event>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let events = query_as!(Event, "SELECT * FROM events")
             .fetch_all(db)
             .await?;
@@ -47,7 +51,11 @@ impl Event {
 
     /// Load all the events by their slugs, for use in dataloaders
     #[cfg(feature = "graphql")]
-    pub(crate) async fn load(slugs: &[String], db: &PgPool) -> Result<HashMap<String, Event>> {
+    pub(crate) async fn load<'c, 'e, E>(slugs: &[String], db: E) -> Result<HashMap<String, Event>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_slug = query_as!(Event, "SELECT * FROM events WHERE slug = ANY($1)", slugs)
             .fetch(db)
             .map_ok(|event| (event.slug.clone(), event))
@@ -58,10 +66,14 @@ impl Event {
 
     /// Load all the events for the selected organizations by their IDs, for use in dataloaders
     #[cfg(feature = "graphql")]
-    pub(crate) async fn load_for_organizations(
+    pub(crate) async fn load_for_organizations<'c, 'e, E>(
         organization_ids: &[i32],
-        db: &PgPool,
-    ) -> Result<HashMap<i32, Vec<Event>>> {
+        db: E,
+    ) -> Result<HashMap<i32, Vec<Event>>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let by_organization = query_as!(
             Event,
             "SELECT * FROM events WHERE organization_id = ANY($1)",
@@ -79,7 +91,11 @@ impl Event {
 
     /// Get all the events for an organization
     #[instrument(name = "Event::for_organization", skip(db))]
-    pub async fn for_organization(organization_id: i32, db: &PgPool) -> Result<Vec<Event>> {
+    pub async fn for_organization<'c, 'e, E>(organization_id: i32, db: E) -> Result<Vec<Event>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let events = query_as!(
             Event,
             "SELECT * FROM events WHERE organization_id = $1",
@@ -93,7 +109,11 @@ impl Event {
 
     /// Check if an event exists
     #[instrument(name = "Event::exists", skip(db))]
-    pub async fn exists(slug: &str, db: &PgPool) -> Result<bool> {
+    pub async fn exists<'c, 'e, E>(slug: &str, db: E) -> Result<bool>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let result = query!("SELECT exists(SELECT 1 FROM events WHERE slug = $1)", slug)
             .fetch_one(db)
             .await?;
@@ -103,7 +123,11 @@ impl Event {
 
     /// Get an event by it's slug
     #[instrument(name = "Event::find", skip(db))]
-    pub async fn find(slug: &str, db: &PgPool) -> Result<Option<Event>> {
+    pub async fn find<'c, 'e, E>(slug: &str, db: E) -> Result<Option<Event>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let event = query_as!(Event, "SELECT * FROM events WHERE slug = $1", slug)
             .fetch_optional(db)
             .await?;
@@ -113,7 +137,11 @@ impl Event {
 
     /// Get an event by it's custom domain
     #[instrument(name = "Event::find_by_custom_domain", skip(db))]
-    pub async fn find_by_custom_domain(name: &str, db: &PgPool) -> Result<Option<Event>> {
+    pub async fn find_by_custom_domain<'c, 'e, E>(name: &str, db: E) -> Result<Option<Event>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         // TODO: ensure custom domain is valid
 
         let event = query_as!(
@@ -133,12 +161,16 @@ impl Event {
 
     /// Create a new event
     #[instrument(name = "Event::create", skip(db))]
-    pub async fn create(
+    pub async fn create<'c, 'e, E>(
         slug: &str,
         name: &str,
         organization_id: i32,
-        db: &PgPool,
-    ) -> Result<Event> {
+        db: E,
+    ) -> Result<Event>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         let event = query_as!(
             Event,
             "INSERT INTO events (slug, name, organization_id) VALUES ($1, $2, $3) RETURNING *",
@@ -164,7 +196,11 @@ impl Event {
 
     /// Delete an event
     #[instrument(name = "Event::delete", skip(db))]
-    pub async fn delete(slug: &str, db: &PgPool) -> Result<()> {
+    pub async fn delete<'c, 'e, E>(slug: &str, db: E) -> Result<()>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
         query!("DELETE FROM events WHERE slug = $1", slug)
             .execute(db)
             .await?;
@@ -267,7 +303,11 @@ impl<'e> EventUpdater<'e> {
 
     /// Perform the update
     #[instrument(name = "Event::update", skip_all, fields(self.id = %self.event.slug))]
-    pub async fn save(self, db: &PgPool) -> Result<()> {
+    pub async fn save<'c, 'ex, E>(self, db: E) -> Result<()>
+    where
+        'c: 'ex,
+        E: 'ex + Executor<'c, Database = sqlx::Postgres>,
+    {
         if self.name.is_none() && self.organization_id.is_none() && self.expires_on.is_none() {
             // nothing changed
             return Ok(());
