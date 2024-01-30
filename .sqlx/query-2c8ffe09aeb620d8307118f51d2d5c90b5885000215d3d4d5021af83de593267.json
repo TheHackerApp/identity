@@ -1,12 +1,12 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM organizers WHERE user_id = ANY($1)",
+  "query": "\n            INSERT INTO participants (event, user_id) \n            VALUES ($1, $2) \n            ON CONFLICT (event, user_id) DO UPDATE SET updated_at = now()\n            RETURNING *\n            ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "organization_id",
-        "type_info": "Int4"
+        "name": "event",
+        "type_info": "Text"
       },
       {
         "ordinal": 1,
@@ -26,7 +26,8 @@
     ],
     "parameters": {
       "Left": [
-        "Int4Array"
+        "Text",
+        "Int4"
       ]
     },
     "nullable": [
@@ -36,5 +37,5 @@
       false
     ]
   },
-  "hash": "3b7d108e1efaeaaf303b986a82d64d058245cc7956281e32517b7e42b3be406e"
+  "hash": "2c8ffe09aeb620d8307118f51d2d5c90b5885000215d3d4d5021af83de593267"
 }
