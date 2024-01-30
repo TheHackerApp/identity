@@ -236,11 +236,13 @@ pub(crate) async fn complete_registration(
         .unwrap_or_else(|| state.frontend_url.as_str())
         .to_owned(); // satisfying the borrow checker :(
 
+    let mut txn = state.db.begin().await?;
+
     let maybe_user = User::create(
         &form.given_name,
         &form.family_name,
         &session.email,
-        &state.db,
+        &mut *txn,
     )
     .await;
     match maybe_user {
@@ -250,7 +252,7 @@ pub(crate) async fn complete_registration(
                 user.id,
                 &session.id,
                 &session.email,
-                &state.db,
+                &mut *txn,
             )
             .await?;
 
@@ -259,6 +261,8 @@ pub(crate) async fn complete_registration(
         Err(e) if e.is_unique_violation() => {}
         Err(e) => return Err(Error::Database(e)),
     }
+
+    txn.commit().await?;
 
     Ok(Redirect::to(&return_to))
 }

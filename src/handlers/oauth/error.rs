@@ -25,6 +25,12 @@ pub(crate) enum Error {
     InvalidParameter(&'static str),
 }
 
+impl From<database::SqlxError> for Error {
+    fn from(error: database::SqlxError) -> Self {
+        Self::Database(error.into())
+    }
+}
+
 impl From<database::Error> for Error {
     fn from(error: database::Error) -> Self {
         Self::Database(error)
