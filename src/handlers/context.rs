@@ -2,8 +2,8 @@ use super::error::{Error, Result};
 use crate::state::Domains;
 use axum::extract::{Query, State};
 use context::{
-    scope::{self, EventContext},
-    user::{self, AuthenticatedContext, RegistrationNeededContext},
+    AuthenticatedUser, EventScope, Scope, ScopeParams, User as UserContext, UserParams,
+    UserRegistrationNeeded, UserRole,
 };
 use database::{Event, PgPool, User};
 use serde::Deserialize;
@@ -13,9 +13,9 @@ use tracing::{info, instrument, Span};
 #[derive(Deserialize)]
 pub(crate) struct Params<'p> {
     #[serde(flatten)]
-    scope: scope::Params<'p>,
+    scope: ScopeParams<'p>,
     #[serde(flatten)]
-    user: user::Params<'p>,
+    user: UserParams<'p>,
 }
 
 /// Determine the scope and user context for a request
@@ -25,24 +25,22 @@ pub(crate) async fn context(
     State(db): State<PgPool>,
     State(domains): State<Domains>,
     State(sessions): State<session::Manager>,
-) -> Result<(scope::Context, user::Context)> {
-    let scope = scope_context(params.scope, &db, domains).await?;
-    let user = user_context(params.user, &db, sessions).await?;
+) -> Result<(Scope, UserContext)> {
+    let scope = determine_scope_context(params.scope, &db, domains).await?;
+    let user = determine_user_context(params.user, &db, &scope, sessions).await?;
 
     Ok((scope, user))
 }
 
 /// Determine the scope context for the request
-#[instrument(name = "context::scope", skip_all, fields(domain, slug))]
-async fn scope_context(
-    params: scope::Params<'_>,
+#[instrument(name = "scope", skip_all, fields(domain, slug))]
+async fn determine_scope_context(
+    params: ScopeParams<'_>,
     db: &PgPool,
     domains: Domains,
-) -> Result<scope::Context> {
-    use scope::{Context, Params};
-
+) -> Result<Scope> {
     let scope = match params {
-        Params::Slug(slug) => {
+        ScopeParams::Slug(slug) => {
             Span::current().record("slug", &*slug);
             let Some(event) = Event::find(&slug, db).await? else {
                 return Err(Error::EventNotFound);
@@ -50,20 +48,20 @@ async fn scope_context(
 
             info!(scope = "event", %event.slug, %event.organization_id);
 
-            Context::Event(EventContext {
+            Scope::Event(EventScope {
                 event: event.slug,
                 organization_id: event.organization_id,
             })
         }
-        Params::Domain(domain) => {
+        ScopeParams::Domain(domain) => {
             Span::current().record("domain", &*domain);
 
             if domains.requires_admin(&domain) {
                 info!(scope = "admin");
-                Context::Admin
+                Scope::Admin
             } else if domains.requires_user(&domain) {
                 info!(scope = "user");
-                Context::User
+                Scope::User
             } else {
                 let event = if let Some(slug) = domains.event_subdomain_for(&domain) {
                     info!(%slug, "handling hosted domain");
@@ -78,7 +76,7 @@ async fn scope_context(
 
                 info!(scope = "event", %event.slug, %event.organization_id);
 
-                Context::Event(EventContext {
+                Scope::Event(EventScope {
                     event: event.slug,
                     organization_id: event.organization_id,
                 })
@@ -90,14 +88,13 @@ async fn scope_context(
 }
 
 /// Get the user context for the request
-#[instrument(name = "context::user", skip_all)]
-async fn user_context(
-    params: user::Params<'_>,
+#[instrument(name = "user", skip_all)]
+async fn determine_user_context(
+    params: UserParams<'_>,
     db: &PgPool,
+    scope: &Scope,
     sessions: session::Manager,
-) -> Result<user::Context> {
-    use user::Context;
-
+) -> Result<UserContext> {
     let session = sessions
         .load_from_token(&params.token)
         .await?
@@ -105,10 +102,10 @@ async fn user_context(
         .unwrap_or_default();
 
     let context = match session {
-        SessionState::Unauthenticated => Context::Unauthenticated,
-        SessionState::OAuth(_) => Context::OAuth,
+        SessionState::Unauthenticated => UserContext::Unauthenticated,
+        SessionState::OAuth(_) => UserContext::OAuth,
         SessionState::RegistrationNeeded(state) => {
-            Context::RegistrationNeeded(RegistrationNeededContext {
+            UserContext::RegistrationNeeded(UserRegistrationNeeded {
                 provider: state.provider,
                 id: state.id,
                 email: state.email,
@@ -116,18 +113,39 @@ async fn user_context(
         }
         SessionState::Authenticated(state) => {
             let user = User::find(state.id, db).await?.expect("user must exist");
+            let role = determine_role(scope, &user, db).await?;
 
-            // TODO: determine permissions
-
-            Context::Authenticated(AuthenticatedContext {
+            UserContext::Authenticated(AuthenticatedUser {
                 id: user.id,
                 given_name: user.given_name,
                 family_name: user.family_name,
                 email: user.primary_email,
+                role,
                 is_admin: user.is_admin,
             })
         }
     };
 
     Ok(context)
+}
+
+/// Determine the role for the current user
+#[instrument(skip_all, fields(%user.id, role))]
+async fn determine_role(scope: &Scope, user: &User, db: &PgPool) -> Result<Option<UserRole>> {
+    let Scope::Event(event) = scope else {
+        return Ok(None);
+    };
+
+    // Being a participant takes precedence over being an organizer as it is more granular
+    if User::is_participant(user.id, &event.event, db).await? {
+        Span::current().record("role", "participant");
+        return Ok(Some(UserRole::Participant));
+    }
+
+    if let Some(role) = User::is_organizer(user.id, event.organization_id, db).await? {
+        Span::current().record("role", tracing::field::debug(role));
+        return Ok(Some(role.into()));
+    }
+
+    Ok(None)
 }

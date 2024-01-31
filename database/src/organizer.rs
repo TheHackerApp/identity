@@ -7,6 +7,7 @@ use crate::{
 #[cfg(feature = "graphql")]
 use async_graphql::{ComplexObject, Context, Enum, ResultExt, SimpleObject};
 use chrono::{DateTime, Utc};
+use context::UserRole;
 use futures::stream::TryStreamExt;
 use sqlx::{query, query_as, Executor};
 use std::collections::HashMap;
@@ -25,6 +26,16 @@ pub enum Role {
     /// A normal user within the organization
     #[default]
     Organizer,
+}
+
+impl From<Role> for UserRole {
+    fn from(role: Role) -> Self {
+        match role {
+            Role::Director => UserRole::Director,
+            Role::Manager => UserRole::Manager,
+            Role::Organizer => UserRole::Organizer,
+        }
+    }
 }
 
 /// Maps a user to an organization as an organizer

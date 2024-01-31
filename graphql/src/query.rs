@@ -1,5 +1,5 @@
 use async_graphql::{Context, Error, Object, OneofObject, Result, ResultExt};
-use context::{checks, guard, scope};
+use context::{checks, guard, Scope};
 use database::{
     loaders::{
         EventLoader, OrganizationLoader, ProviderLoader, UserByPrimaryEmailLoader, UserLoader,
@@ -65,12 +65,10 @@ impl Query {
         ctx: &Context<'_>,
         id: Option<i32>,
     ) -> Result<Option<Organization>> {
-        use scope::Context;
-
-        let scope = ctx.data_unchecked::<Context>();
+        let scope = ctx.data_unchecked::<Scope>();
         let id = match (scope, id) {
-            (Context::Event(e), Some(id)) if e.organization_id == id => id,
-            (Context::Event(e), None) => e.organization_id,
+            (Scope::Event(e), Some(id)) if e.organization_id == id => id,
+            (Scope::Event(e), None) => e.organization_id,
             (_, Some(id)) => {
                 checks::is_admin(ctx)?;
                 id
@@ -101,12 +99,10 @@ impl Query {
     /// Get an event by its slug
     #[instrument(name = "Query::event", skip(self, ctx))]
     async fn event(&self, ctx: &Context<'_>, slug: Option<String>) -> Result<Option<Event>> {
-        use scope::Context;
-
-        let scope = ctx.data_unchecked::<Context>();
+        let scope = ctx.data_unchecked::<Scope>();
         let slug = match (scope, slug) {
-            (Context::Event(e), Some(slug)) if e.event == slug => slug,
-            (Context::Event(e), None) => e.event.to_owned(),
+            (Scope::Event(e), Some(slug)) if e.event == slug => slug,
+            (Scope::Event(e), None) => e.event.to_owned(),
             (_, Some(slug)) => {
                 checks::is_admin(ctx)?;
                 slug

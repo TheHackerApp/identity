@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT role as \"role: Role\" FROM organizers WHERE organization_id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "role: Role",
+        "type_info": {
+          "Custom": {
+            "name": "organizer_role",
+            "kind": {
+              "Enum": [
+                "director",
+                "manager",
+                "organizer"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "192fcf5fce98fcd5ecb25c5dba3b1ac40a77cdb029164f758be9dc83f484e762"
+}

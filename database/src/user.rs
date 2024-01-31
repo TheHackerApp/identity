@@ -1,9 +1,9 @@
-use crate::Result;
 #[cfg(feature = "graphql")]
 use crate::{
     loaders::{EventsForUserLoader, IdentitiesForUserLoader, OrganizationsForUserLoader},
     Identity, Organizer, Participant,
 };
+use crate::{Result, Role};
 #[cfg(feature = "graphql")]
 use async_graphql::{ComplexObject, Context, ResultExt};
 use chrono::{DateTime, Utc};
@@ -109,6 +109,46 @@ impl User {
             .fetch_optional(db)
             .await?;
         Ok(user)
+    }
+
+    /// Check the role a user has in the organization
+    #[instrument(name = "User::is_organizer", skip(db))]
+    pub async fn is_organizer<'c, 'e, E>(
+        id: i32,
+        organization_id: i32,
+        db: E,
+    ) -> Result<Option<Role>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
+        let result = query!(
+            r#"SELECT role as "role: Role" FROM organizers WHERE organization_id = $1 AND user_id = $2"#,
+            organization_id,
+            id
+        )
+        .fetch_optional(db)
+        .await?;
+
+        Ok(result.map(|result| result.role))
+    }
+
+    /// Check if the user is a participant
+    #[instrument(name = "User::is_participant", skip(db))]
+    pub async fn is_participant<'c, 'e, E>(id: i32, event: &str, db: E) -> Result<bool>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
+        let result = query!(
+            "SELECT exists(SELECT 1 FROM participants WHERE event = $1 AND user_id = $2)",
+            event,
+            id
+        )
+        .fetch_one(db)
+        .await?;
+
+        Ok(result.exists.unwrap_or_default())
     }
 
     /// Create a new user

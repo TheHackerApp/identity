@@ -1,5 +1,5 @@
 use crate::AppState;
-use ::context::{scope, user};
+use ::context::{Scope, User};
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
@@ -30,8 +30,8 @@ pub(crate) fn oauth() -> Router<AppState> {
 #[instrument(name = "graphql", skip_all)]
 pub(crate) async fn graphql(
     State(schema): State<graphql::Schema>,
-    scope: scope::Context,
-    user: user::Context,
+    scope: Scope,
+    user: User,
     req: GraphQLRequest,
 ) -> GraphQLResponse {
     let req = req.into_inner().data(scope).data(user);

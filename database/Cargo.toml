@@ -9,6 +9,7 @@ edition = "2021"
 async-graphql = { workspace = true, features = ["dataloader"], optional = true }
 async-trait = { version = "0.1", optional = true }
 chrono.workspace = true
+context.workspace = true
 eyre.workspace = true
 futures.workspace = true
 serde.workspace = true
