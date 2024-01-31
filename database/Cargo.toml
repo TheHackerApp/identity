@@ -20,4 +20,4 @@ tracing.workspace = true
 
 [features]
 default = []
-graphql = ["async-graphql", "async-trait", "tokio"]
+graphql = ["async-graphql", "async-trait", "context/graphql", "tokio"]

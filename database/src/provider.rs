@@ -1,5 +1,7 @@
 use crate::{Json, Result};
 use chrono::{DateTime, Utc};
+#[cfg(feature = "graphql")]
+use context::{checks, guard};
 use futures::stream::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Executor, QueryBuilder};
@@ -22,10 +24,13 @@ pub struct Provider {
     /// The URL for the provider's icon
     pub icon: String,
     /// Provider-specific configuration, i.e. implementation kind, OIDC URLs, scopes, etc
+    #[graphql(guard = "guard(checks::admin_only)")]
     pub config: Json<ProviderConfiguration>,
     /// When the provider was created
+    #[graphql(guard = "guard(checks::admin_only)")]
     pub created_at: DateTime<Utc>,
     /// WHen the provider was last updated
+    #[graphql(guard = "guard(checks::admin_only)")]
     pub updated_at: DateTime<Utc>,
 }
 
