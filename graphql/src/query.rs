@@ -16,13 +16,18 @@ impl Query {
     #[instrument(name = "Query::providers", skip_all)]
     async fn providers(&self, ctx: &Context<'_>) -> Result<Vec<Provider>> {
         let db = ctx.data_unchecked::<PgPool>();
-        let providers = Provider::all(db).await.extend()?;
+        let providers = match checks::admin_only(ctx) {
+            Ok(()) => Provider::all(db).await,
+            Err(_) => Provider::all_enabled(db).await,
+        }
+        .extend()?;
 
         Ok(providers)
     }
 
     /// Get an authentication provider by its slug
     #[instrument(name = "Query::provider", skip(self, ctx))]
+    #[graphql(guard = "guard(checks::admin_only)")]
     async fn provider(&self, ctx: &Context<'_>, slug: String) -> Result<Option<Provider>> {
         let loader = ctx.data_unchecked::<ProviderLoader>();
         let provider = loader.load_one(slug).await.extend()?;
