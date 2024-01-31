@@ -141,6 +141,9 @@ impl Manager {
     /// Load the session from it's token
     #[instrument(name = "Manager::load_from_token", skip(self))]
     pub async fn load_from_token(&self, token: &str) -> Result<Option<Session>> {
+        if token.is_empty() {
+            return Ok(None);
+        }
         if token.len() != SERIALIZED_LENGTH {
             warn!(length = token.len(), "invalid session token length");
             return Ok(None);
