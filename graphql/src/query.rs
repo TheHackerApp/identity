@@ -87,12 +87,22 @@ impl Query {
     ) -> Result<Option<Organization>> {
         let scope = ctx.data_unchecked::<Scope>();
         let id = match (scope, id) {
-            (Scope::Event(e), Some(id)) if e.organization_id == id => id,
-            (Scope::Event(e), None) => e.organization_id,
-            (_, Some(id)) => {
+            (Scope::Admin, Some(id)) => {
                 checks::is_admin(ctx)?;
                 id
             }
+            (Scope::User, Some(id)) => {
+                let db = ctx.data_unchecked::<PgPool>();
+                let user = checks::is_authenticated(ctx)?;
+                if User::is_organizer(user.id, id, db).await?.is_some() {
+                    id
+                } else {
+                    return Err(Forbidden.into());
+                }
+            }
+            (Scope::Event(e), Some(id)) if e.organization_id == id => id,
+            (Scope::Event(e), None) => e.organization_id,
+            (Scope::Event(_), Some(_)) => return Err(Forbidden.into()),
             (_, None) => {
                 return Err(Error::new(
                     r#"argument "id" is required as the event could not be inferred"#,
