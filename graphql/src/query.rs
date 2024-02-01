@@ -138,7 +138,9 @@ impl Query {
             (Scope::User, Some(slug)) => {
                 let db = ctx.data_unchecked::<PgPool>();
                 let user = checks::is_authenticated(ctx)?;
-                if User::is_organizer_for_event(user.id, &slug, db).await? {
+                if User::is_organizer_for_event(user.id, &slug, db).await?
+                    || User::is_participant(user.id, &slug, db).await?
+                {
                     slug
                 } else {
                     return Err(Forbidden.into());
