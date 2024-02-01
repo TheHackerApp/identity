@@ -1,8 +1,9 @@
 use async_graphql::{Context, Error, Object, OneofObject, Result, ResultExt};
-use context::{checks, guard, Scope};
+use context::{checks, guard, Scope, User as UserContext};
 use database::{
     loaders::{
-        EventLoader, OrganizationLoader, ProviderLoader, UserByPrimaryEmailLoader, UserLoader,
+        EventLoader, OrganizationLoader, OrganizationsForUserLoader, ProviderLoader,
+        UserByPrimaryEmailLoader, UserLoader,
     },
     Event, Organization, PgPool, Provider, User,
 };
@@ -56,7 +57,7 @@ impl Query {
 
     /// Get all the registered organizations
     #[instrument(name = "Query::organizations", skip_all)]
-    #[graphql(guard = "guard(checks::is_admin)")]
+    #[graphql(guard = "guard(checks::admin_only)")]
     async fn organizations(&self, ctx: &Context<'_>) -> Result<Vec<Organization>> {
         let db = ctx.data_unchecked::<PgPool>();
         let organizations = Organization::all(db).await.extend()?;
