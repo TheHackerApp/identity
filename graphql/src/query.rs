@@ -37,6 +37,7 @@ impl Query {
 
     /// Get a user by their ID
     #[instrument(name = "Query::user", skip(self, ctx))]
+    #[graphql(guard = "guard(checks::admin_only)")]
     async fn user(&self, ctx: &Context<'_>, by: UserBy) -> Result<Option<User>> {
         let user = match by {
             UserBy::Id(id) => {
