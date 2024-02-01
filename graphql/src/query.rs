@@ -1,9 +1,9 @@
+use crate::errors::{Forbidden, Unauthorized};
 use async_graphql::{Context, Error, Object, OneofObject, Result, ResultExt};
 use context::{checks, guard, Scope, User as UserContext};
 use database::{
     loaders::{
-        EventLoader, OrganizationLoader, OrganizationsForUserLoader, ProviderLoader,
-        UserByPrimaryEmailLoader, UserLoader,
+        EventLoader, OrganizationLoader, ProviderLoader, UserByPrimaryEmailLoader, UserLoader,
     },
     Event, Organization, PgPool, Provider, User,
 };
@@ -13,6 +13,19 @@ pub struct Query;
 
 #[Object]
 impl Query {
+    /// Get information about the current user
+    #[instrument(name = "Query::me", skip_all)]
+    async fn me(&self, ctx: &Context<'_>) -> Result<User> {
+        match ctx.data_unchecked::<UserContext>() {
+            UserContext::Authenticated(user) => {
+                let loader = ctx.data_unchecked::<UserLoader>();
+                loader.load_one(user.id).await.extend().transpose().unwrap()
+            }
+            UserContext::OAuth | UserContext::RegistrationNeeded(_) => Err(Forbidden.into()),
+            UserContext::Unauthenticated => Err(Unauthorized.into()),
+        }
+    }
+
     /// Get all the authentication providers
     #[instrument(name = "Query::providers", skip_all)]
     async fn providers(&self, ctx: &Context<'_>) -> Result<Vec<Provider>> {
