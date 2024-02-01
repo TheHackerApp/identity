@@ -133,6 +133,33 @@ impl User {
         Ok(result.map(|result| result.role))
     }
 
+    /// Check if the user is an organizer for the events
+    #[instrument(name = "User::is_organizer_for_event", skip(db))]
+    pub async fn is_organizer_for_event<'c, 'e, E>(id: i32, event: &str, db: E) -> Result<bool>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
+        let result = query!(
+            r#"
+            SELECT exists(
+                SELECT 1 FROM events
+                INNER JOIN organizers ON events.organization_id = organizers.organization_id
+                INNER JOIN users ON organizers.user_id = users.id
+                WHERE 
+                    users.id = $1 
+                    AND events.slug = $2
+            )
+            "#,
+            id,
+            event,
+        )
+        .fetch_one(db)
+        .await?;
+
+        Ok(result.exists.unwrap_or_default())
+    }
+
     /// Check if the user is a participant
     #[instrument(name = "User::is_participant", skip(db))]
     pub async fn is_participant<'c, 'e, E>(id: i32, event: &str, db: E) -> Result<bool>

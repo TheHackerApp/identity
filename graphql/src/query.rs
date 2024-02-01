@@ -121,12 +121,22 @@ impl Query {
     async fn event(&self, ctx: &Context<'_>, slug: Option<String>) -> Result<Option<Event>> {
         let scope = ctx.data_unchecked::<Scope>();
         let slug = match (scope, slug) {
-            (Scope::Event(e), Some(slug)) if e.event == slug => slug,
-            (Scope::Event(e), None) => e.event.to_owned(),
-            (_, Some(slug)) => {
+            (Scope::Admin, Some(slug)) => {
                 checks::is_admin(ctx)?;
                 slug
             }
+            (Scope::User, Some(slug)) => {
+                let db = ctx.data_unchecked::<PgPool>();
+                let user = checks::is_authenticated(ctx)?;
+                if User::is_organizer_for_event(user.id, &slug, db).await? {
+                    slug
+                } else {
+                    return Err(Forbidden.into());
+                }
+            }
+            (Scope::Event(e), Some(slug)) if e.event == slug => slug,
+            (Scope::Event(e), None) => e.event.to_owned(),
+            (Scope::Event(_), Some(_)) => return Err(Forbidden.into()),
             (_, None) => {
                 return Err(Error::new(
                     r#"argument "slug" is required as the event could not be inferred"#,
