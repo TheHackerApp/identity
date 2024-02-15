@@ -487,6 +487,10 @@ type Provider {
 
 type Query {
 	"""
+	Get information about the current user
+	"""
+	me: User!
+	"""
 	Get all the authentication providers
 	"""
 	providers: [Provider!]!
