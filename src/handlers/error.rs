@@ -1,5 +1,5 @@
 use axum::{
-    http::StatusCode,
+    http::{uri::InvalidUri, StatusCode},
     response::{IntoResponse, Json, Response},
 };
 use serde::Serialize;
@@ -68,6 +68,13 @@ impl From<database::Error> for Error {
 impl From<session::Error> for Error {
     fn from(error: session::Error) -> Self {
         Self::Session(error)
+    }
+}
+
+impl From<InvalidUri> for Error {
+    fn from(_: InvalidUri) -> Self {
+        // if the domain is invalid, we know it can't be found
+        Self::EventNotFound
     }
 }
 

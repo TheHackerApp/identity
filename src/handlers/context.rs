@@ -1,6 +1,9 @@
 use super::error::{Error, Result};
 use crate::state::Domains;
-use axum::extract::{Query, State};
+use axum::{
+    extract::{Query, State},
+    http::uri::Authority,
+};
 use context::{
     AuthenticatedUser, EventScope, Scope, ScopeParams, User as UserContext, UserParams,
     UserRegistrationNeeded, UserRole,
@@ -54,21 +57,24 @@ async fn determine_scope_context(
             })
         }
         ScopeParams::Domain(domain) => {
-            Span::current().record("domain", &*domain);
+            let authority = Authority::try_from(&*domain)?;
+            let host = authority.host();
 
-            if domains.requires_admin(&domain) {
+            Span::current().record("domain", host);
+
+            if domains.requires_admin(host) {
                 info!(scope = "admin");
                 Scope::Admin
-            } else if domains.requires_user(&domain) {
+            } else if domains.requires_user(host) {
                 info!(scope = "user");
                 Scope::User
             } else {
-                let event = if let Some(slug) = domains.event_subdomain_for(&domain) {
+                let event = if let Some(slug) = domains.event_subdomain_for(host) {
                     info!(%slug, "handling hosted domain");
                     Event::find(slug, db).await?
                 } else {
                     info!("handling custom domain");
-                    Event::find_by_custom_domain(&domain, db).await?
+                    Event::find_by_custom_domain(host, db).await?
                 };
                 let Some(event) = event else {
                     return Err(Error::EventNotFound);
