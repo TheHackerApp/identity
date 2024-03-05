@@ -34,7 +34,7 @@ const COOKIE_NAME: &str = "session";
 /// length of the deserialized cookie in bytes
 const COOKIE_SIZE: usize = 96;
 /// length of the base64 url-encoded cookie
-const SERIALIZED_LENGTH: usize = 128;
+pub const SERIALIZED_LENGTH: usize = 128;
 /// start position of the signature in the signed cookie
 const SIGNATURE_START_INDEX: usize = 64;
 
@@ -68,6 +68,11 @@ impl Session {
     /// Get the session ID
     pub fn id(&self) -> &str {
         &self.id
+    }
+
+    /// Get the session expiration date
+    pub fn expiry(&self) -> DateTime<Utc> {
+        self.expiry
     }
 
     /// Generate the token for the session
@@ -138,6 +143,11 @@ impl Manager {
         Self { store, settings }
     }
 
+    /// Load a session from it's ID
+    pub async fn load_from_id(&self, id: &str) -> Result<Option<Session>> {
+        self.store.load(id).await
+    }
+
     /// Load the session from it's token
     #[instrument(name = "Manager::load_from_token", skip(self))]
     pub async fn load_from_token(&self, token: &str) -> Result<Option<Session>> {
@@ -166,7 +176,7 @@ impl Manager {
         }
 
         let id = Session::generate_id(value);
-        self.store.load(&id).await
+        self.load_from_id(&id).await
     }
 
     /// Load the session from cookies
@@ -179,7 +189,7 @@ impl Manager {
     }
 
     /// Save the session to the store
-    #[instrument(name = "Manager::save", skip_all, fields(session.id = %session.id()))]
+    #[instrument(name = "Manager::save", skip_all, fields(session.id = % session.id()))]
     pub async fn save(&self, session: &Session) -> Result<()> {
         self.store.save(session).await
     }

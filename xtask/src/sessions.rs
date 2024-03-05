@@ -2,7 +2,7 @@ use crate::util;
 use database::{PgPool, Provider, User};
 use eyre::{eyre, WrapErr};
 use session::{AuthenticatedState, RegistrationNeededState, Session, SessionState};
-use tracing::info;
+use tracing::{error, info};
 use url::Url;
 
 pub async fn run(args: Args) -> eyre::Result<()> {
@@ -11,10 +11,61 @@ pub async fn run(args: Args) -> eyre::Result<()> {
 
     // We can set fake values for the domain, secure, and signing key options since we're only
     // generating session tokens, not cookies.
-    let manager = session::Manager::new(cache, "xtask", false, "xtask");
+    let manager = session::Manager::new(cache, "xtask", false, &args.signing_key);
 
+    match args.command {
+        Command::Generate { session_type } => generate(session_type, args.signing_key, db, manager).await,
+        Command::Info { value } => info(value, manager).await,
+    }
+}
+
+#[derive(clap::Args, Debug)]
+#[clap(rename_all = "kebab-case")]
+pub struct Args {
+    /// The Redis cache to store sessions in
+    #[arg(long, env = "CACHE_URL")]
+    cache_url: String,
+
+    /// The database to run migrations on
+    #[arg(short, long, env = "DATABASE_URL")]
+    database_url: String,
+
+    /// A secret to sign the session cookie with
+    ///
+    /// This should be a long, random string
+    #[arg(long, env = "COOKIE_SIGNING_KEY")]
+    signing_key: String,
+
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Debug, clap::Subcommand)]
+#[clap(rename_all = "kebab-case")]
+enum Command {
+    /// Get details about a session
+    ///
+    /// Display information about a session by providing either an ID or signed cookie
+    #[clap(alias("i"))]
+    Info {
+        /// A cookie value or session ID
+        #[clap(value_name = "ID_OR_COOKIE")]
+        value: String,
+    },
+
+    /// Generate a new session
+    ///
+    /// Manually generate a new session ID and cookie value for the desired type
+    #[clap(alias("g"))]
+    Generate {
+        #[clap(subcommand)]
+        session_type: SessionType,
+    },
+}
+
+async fn generate(session_type: SessionType, signing_key: String, db: PgPool, manager: session::Manager) -> eyre::Result<()> {
     let mut session = Session::default();
-    session.state = match args.session_type {
+    session.state = match session_type {
         SessionType::Unauthenticated => SessionState::Unauthenticated,
         SessionType::RegistrationNeeded(opts) => {
             let provider = opts.retrieve_provider_slug(&db).await?;
@@ -38,31 +89,43 @@ pub async fn run(args: Args) -> eyre::Result<()> {
         .wrap_err("failed to save session")?;
 
     let token = session
-        .token(args.signing_key.as_bytes())
+        .token(signing_key.as_bytes())
         .expect("session must have secret part");
     info!(%token, id = %session.id(), "generated session token");
 
     Ok(())
 }
 
-#[derive(clap::Args, Debug)]
-pub struct Args {
-    /// The Redis cache to store sessions in
-    #[arg(long, env = "CACHE_URL")]
-    cache_url: String,
+async fn info(value: String, manager: session::Manager) -> eyre::Result<()> {
+    let session = if value.len() == session::SERIALIZED_LENGTH {
+        manager.load_from_token(&value).await?
+    } else if value.len() == 43 {
+        manager.load_from_id(&value).await?
+    } else {
+        error!("value is not a cookie or session ID");
+        return Ok(());
+    };
 
-    /// The database to run migrations on
-    #[arg(short, long, env = "DATABASE_URL")]
-    database_url: String,
+    let Some(session) = session else {
+        error!("session does not exist");
+        return Ok(());
+    };
 
-    /// A secret to sign the session cookie with
-    ///
-    /// This should be a long, random string
-    #[arg(long, env = "COOKIE_SIGNING_KEY")]
-    signing_key: String,
+    info!(id=%session.id(), expires_at=%session.expiry(), state=%session.state.name(), "found session");
+    match session.state {
+        SessionState::OAuth(state) => {
+            let return_to = state.return_to.map(|u| u.as_str().to_owned()).unwrap_or_default();
+            info!(provider=%state.provider, %return_to)
+        }
+        SessionState::RegistrationNeeded(state) => {
+            let return_to = state.return_to.map(|u| u.as_str().to_owned()).unwrap_or_default();
+            info!(provider.slug=%state.provider, provider.id=%state.id, email=%state.email, %return_to);
+        }
+        SessionState::Authenticated(state) => info!(user_id=%state.id),
+        _ => {}
+    }
 
-    #[clap(subcommand)]
-    session_type: SessionType,
+    Ok(())
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -125,7 +188,7 @@ impl AuthenticatedOptions {
             (None, Some(email)) => User::find_by_primary_email(&email, db).await?,
             _ => unreachable!(),
         }
-        .ok_or_else(|| eyre!("could not find user"))?;
+            .ok_or_else(|| eyre!("could not find user"))?;
 
         Ok(user.id)
     }
