@@ -20,11 +20,12 @@ pub fn router(
     domain_suffix: String,
     admin_domains: Vec<String>,
     user_domains: Vec<String>,
+    cookie_domain: &str,
     cookie_signing_key: &str,
 ) -> Router {
     let sessions = session::Manager::new(
         cache,
-        frontend_url.host_str().unwrap(),
+        cookie_domain,
         frontend_url.scheme() == "https",
         cookie_signing_key,
     );

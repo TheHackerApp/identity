@@ -37,6 +37,7 @@ async fn main() -> eyre::Result<()> {
         config.domain_suffix,
         config.admin_domains,
         config.user_domains,
+        &config.cookie_domain,
         &config.cookie_signing_key,
     );
 
@@ -113,10 +114,10 @@ struct Config {
 
     /// The domain suffix where non-custom domains are hosted
     #[arg(
-        long,
-        default_value = ".thehacker.app",
-        value_parser = valid_domain_suffix,
-        env = "DOMAIN_SUFFIX",
+    long,
+    default_value = ".thehacker.app",
+    value_parser = valid_domain_suffix,
+    env = "DOMAIN_SUFFIX",
     )]
     domain_suffix: String,
 
@@ -134,6 +135,12 @@ struct Config {
     #[arg(long, value_delimiter = ',', env = "ALLOWED_REDIRECT_DOMAINS")]
     allowed_redirect_domains: Vec<String>,
 
+    /// The domain where the session cookie is set
+    ///
+    /// This should be the common root domain between the API and account domains
+    #[arg(long, env = "COOKIE_DOMAIN")]
+    cookie_domain: String,
+
     /// A secret to sign the session cookie with
     ///
     /// This should be a long, random string
@@ -146,10 +153,10 @@ struct Config {
 
     /// The protocol to use when exporting OpenTelemetry traces
     #[arg(
-        long,
-        default_value = "grpc",
-        value_parser = opentelemetry_protocol_parser,
-        env = "OTEL_EXPORTER_OTLP_PROTOCOL",
+    long,
+    default_value = "grpc",
+    value_parser = opentelemetry_protocol_parser,
+    env = "OTEL_EXPORTER_OTLP_PROTOCOL",
     )]
     opentelemetry_protocol: OpenTelemetryProtocol,
 }
