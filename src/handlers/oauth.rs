@@ -279,5 +279,5 @@ pub(crate) async fn logout(
 ) -> Redirect {
     session.logout();
 
-    Redirect::to(frontend_url.as_str())
+    Redirect::to(frontend_url.join("/login").as_str())
 }
