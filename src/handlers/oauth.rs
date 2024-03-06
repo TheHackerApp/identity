@@ -1,10 +1,10 @@
 use crate::state::{AllowedRedirectDomains, ApiUrl, AppState, FrontendUrl};
 use axum::{
-    extract::{Form, Path, Query, State},
+    extract::{Json, Path, Query, State},
     response::Redirect,
 };
 use database::{CustomDomain, Identity, PgPool, Provider, User};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use session::extract::{
     CurrentUser, Mutable, OAuthSession, RegistrationNeededSession, UnauthenticatedSession,
 };
@@ -220,8 +220,8 @@ impl CallbackResult {
 pub(crate) async fn complete_registration(
     State(state): State<AppState>,
     session: RegistrationNeededSession<Mutable>,
-    Form(form): Form<RegistrationForm>,
-) -> Result<Redirect> {
+    Json(form): Json<RegistrationForm>,
+) -> Result<Json<RegistrationResponse>> {
     let given_name = form.given_name.trim();
     if given_name.is_empty() {
         return Err(Error::InvalidParameter("givenName"));
@@ -260,7 +260,9 @@ pub(crate) async fn complete_registration(
 
     txn.commit().await?;
 
-    Ok(Redirect::to(&return_to))
+    Ok(Json(RegistrationResponse {
+        redirect_uri: return_to,
+    }))
 }
 
 #[derive(Debug, Deserialize)]
@@ -270,6 +272,13 @@ pub(crate) struct RegistrationForm {
     given_name: String,
     /// The user's family/last name
     family_name: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RegistrationResponse {
+    /// The URL the client should redirect to
+    redirect_uri: String,
 }
 
 #[instrument(name = "oauth::logout", skip_all, fields(user.id = session.id))]

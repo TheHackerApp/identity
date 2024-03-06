@@ -30,24 +30,25 @@ pub fn router(
         cookie_signing_key,
     );
 
-    let state = AppState::new(
-        api_url,
-        db,
-        frontend_url,
-        sessions.clone(),
-        allowed_redirect_domains,
-        domain_suffix,
-        admin_domains,
-        user_domains,
-    );
-
     Router::new()
         .route("/context", get(handlers::context))
         .route(
             "/graphql",
             get(handlers::playground).post(handlers::graphql),
         )
-        .nest("/oauth", handlers::oauth().layer(session::layer(sessions)))
-        .with_state(state)
+        .nest(
+            "/oauth",
+            handlers::oauth(&frontend_url).layer(session::layer(sessions.clone())),
+        )
+        .with_state(AppState::new(
+            api_url,
+            db,
+            frontend_url,
+            sessions,
+            allowed_redirect_domains,
+            domain_suffix,
+            admin_domains,
+            user_domains,
+        ))
         .layer(logging::http())
 }
