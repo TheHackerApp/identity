@@ -19,11 +19,11 @@ use error::{Error, Result};
 
 /// Start the OAuth2 login flow
 #[instrument(
-    name = "oauth::launch", skip_all,
-    fields(
-        %slug,
-        return_to = params.return_to.as_ref().map(|u| u.as_str()).unwrap_or_default(),
-    )
+name = "oauth::launch", skip_all,
+fields(
+% slug,
+return_to = params.return_to.as_ref().map(| u | u.as_str()).unwrap_or_default(),
+)
 )]
 pub(crate) async fn launch(
     Path(slug): Path<String>,
@@ -60,9 +60,9 @@ async fn redirect_url_is_valid(
 ) -> Result<bool> {
     // Require HTTPS-only URLs (but allows HTTP in development)
     #[cfg(debug_assertions)]
-    let valid_scheme = url.scheme() == "http" || url.scheme() == "https";
+        let valid_scheme = url.scheme() == "http" || url.scheme() == "https";
     #[cfg(not(debug_assertions))]
-    let valid_scheme = url.scheme() == "https";
+        let valid_scheme = url.scheme() == "https";
     if !valid_scheme {
         return Ok(false);
     }
@@ -88,15 +88,15 @@ pub(crate) struct LaunchParams {
 
 /// Handle provider redirects and complete the login flow
 #[instrument(
-    name = "oauth::callback",
-    skip_all,
-    fields(
-        state = %params.state,
-        success = matches!(params.result, CallbackResult::Success { .. }),
-        provider.slug = session.provider,
-        provider.id,
-        return_to = session.return_to.as_ref().map(|u| u.as_str()).unwrap_or_default(),
-    ),
+name = "oauth::callback",
+skip_all,
+fields(
+state = % params.state,
+success = matches ! (params.result, CallbackResult::Success { .. }),
+provider.slug = session.provider,
+provider.id,
+return_to = session.return_to.as_ref().map(| u | u.as_str()).unwrap_or_default(),
+),
 )]
 pub(crate) async fn callback(
     Query(params): Query<CallbackParams>,
@@ -222,11 +222,13 @@ pub(crate) async fn complete_registration(
     session: RegistrationNeededSession<Mutable>,
     Form(form): Form<RegistrationForm>,
 ) -> Result<Redirect> {
-    if form.given_name.is_empty() {
-        return Err(Error::InvalidParameter("given_name"));
+    let given_name = form.given_name.trim();
+    if given_name.is_empty() {
+        return Err(Error::InvalidParameter("givenName"));
     }
-    if form.family_name.is_empty() {
-        return Err(Error::InvalidParameter("family_name"));
+    let family_name = form.family_name.trim();
+    if family_name.is_empty() {
+        return Err(Error::InvalidParameter("familyName"));
     }
 
     let return_to = session
@@ -239,12 +241,12 @@ pub(crate) async fn complete_registration(
     let mut txn = state.db.begin().await?;
 
     let maybe_user = User::create(
-        &form.given_name,
-        &form.family_name,
+        given_name,
+        family_name,
         &session.email,
         &mut *txn,
     )
-    .await;
+        .await;
     match maybe_user {
         Ok(user) => {
             Identity::link(
@@ -254,7 +256,7 @@ pub(crate) async fn complete_registration(
                 &session.email,
                 &mut *txn,
             )
-            .await?;
+                .await?;
 
             session.into_authenticated(user.id);
         }
@@ -268,6 +270,7 @@ pub(crate) async fn complete_registration(
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct RegistrationForm {
     /// The user's given/first name
     given_name: String,
