@@ -60,9 +60,9 @@ async fn redirect_url_is_valid(
 ) -> Result<bool> {
     // Require HTTPS-only URLs (but allows HTTP in development)
     #[cfg(debug_assertions)]
-        let valid_scheme = url.scheme() == "http" || url.scheme() == "https";
+    let valid_scheme = url.scheme() == "http" || url.scheme() == "https";
     #[cfg(not(debug_assertions))]
-        let valid_scheme = url.scheme() == "https";
+    let valid_scheme = url.scheme() == "https";
     if !valid_scheme {
         return Ok(false);
     }
@@ -240,13 +240,7 @@ pub(crate) async fn complete_registration(
 
     let mut txn = state.db.begin().await?;
 
-    let maybe_user = User::create(
-        given_name,
-        family_name,
-        &session.email,
-        &mut *txn,
-    )
-        .await;
+    let maybe_user = User::create(given_name, family_name, &session.email, &mut *txn).await;
     match maybe_user {
         Ok(user) => {
             Identity::link(
@@ -256,7 +250,7 @@ pub(crate) async fn complete_registration(
                 &session.email,
                 &mut *txn,
             )
-                .await?;
+            .await?;
 
             session.into_authenticated(user.id);
         }

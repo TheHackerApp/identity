@@ -14,7 +14,9 @@ pub async fn run(args: Args) -> eyre::Result<()> {
     let manager = session::Manager::new(cache, "xtask", false, &args.signing_key);
 
     match args.command {
-        Command::Generate { session_type } => generate(session_type, args.signing_key, db, manager).await,
+        Command::Generate { session_type } => {
+            generate(session_type, args.signing_key, db, manager).await
+        }
         Command::Info { value } => info(value, manager).await,
     }
 }
@@ -63,7 +65,12 @@ enum Command {
     },
 }
 
-async fn generate(session_type: SessionType, signing_key: String, db: PgPool, manager: session::Manager) -> eyre::Result<()> {
+async fn generate(
+    session_type: SessionType,
+    signing_key: String,
+    db: PgPool,
+    manager: session::Manager,
+) -> eyre::Result<()> {
     let mut session = Session::default();
     session.state = match session_type {
         SessionType::Unauthenticated => SessionState::Unauthenticated,
@@ -114,11 +121,17 @@ async fn info(value: String, manager: session::Manager) -> eyre::Result<()> {
     info!(id=%session.id(), expires_at=%session.expiry(), state=%session.state.name(), "found session");
     match session.state {
         SessionState::OAuth(state) => {
-            let return_to = state.return_to.map(|u| u.as_str().to_owned()).unwrap_or_default();
+            let return_to = state
+                .return_to
+                .map(|u| u.as_str().to_owned())
+                .unwrap_or_default();
             info!(provider=%state.provider, %return_to)
         }
         SessionState::RegistrationNeeded(state) => {
-            let return_to = state.return_to.map(|u| u.as_str().to_owned()).unwrap_or_default();
+            let return_to = state
+                .return_to
+                .map(|u| u.as_str().to_owned())
+                .unwrap_or_default();
             info!(provider.slug=%state.provider, provider.id=%state.id, email=%state.email, %return_to);
         }
         SessionState::Authenticated(state) => info!(user_id=%state.id),
@@ -188,7 +201,7 @@ impl AuthenticatedOptions {
             (None, Some(email)) => User::find_by_primary_email(&email, db).await?,
             _ => unreachable!(),
         }
-            .ok_or_else(|| eyre!("could not find user"))?;
+        .ok_or_else(|| eyre!("could not find user"))?;
 
         Ok(user.id)
     }
