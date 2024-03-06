@@ -95,9 +95,9 @@ impl Session {
     #[cfg(feature = "server")]
     pub(crate) fn extend_if_expiring(&mut self) {
         let now = Utc::now();
-        if (self.expiry - Duration::hours(8)) < now {
+        if (self.expiry - Duration::try_hours(8).unwrap()) < now {
             tracing::debug!("session about to expire, extending");
-            self.expiry = now + Duration::days(3)
+            self.expiry = now + Duration::try_days(3).unwrap()
         }
     }
 }
@@ -109,7 +109,7 @@ impl Default for Session {
 
         Self {
             id: Self::generate_id(&cookie_value),
-            expiry: Utc::now() + Duration::days(14),
+            expiry: Utc::now() + Duration::try_days(14).unwrap(),
             state: SessionState::default(),
             cookie_value: Some(cookie_value),
         }
