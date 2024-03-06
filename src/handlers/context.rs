@@ -118,6 +118,7 @@ async fn determine_user_context(
             })
         }
         SessionState::Authenticated(state) => {
+            // TODO: handle user not existing
             let user = User::find(state.id, db).await?.expect("user must exist");
             let role = determine_role(scope, &user, db).await?;
 
