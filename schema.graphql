@@ -130,10 +130,6 @@ input CreateProviderInput {
 	"""
 	name: String!
 	"""
-	The icon to show next to the display name
-	"""
-	icon: String!
-	"""
 	The provider-specific configuration
 	"""
 	config: JSON!
@@ -468,10 +464,6 @@ type Provider {
 	"""
 	name: String!
 	"""
-	The URL for the provider's icon
-	"""
-	icon: String!
-	"""
 	Provider-specific configuration, i.e. implementation kind, OIDC URLs, scopes, etc
 	"""
 	config: JSON!
@@ -725,10 +717,6 @@ input UpdateProviderInput {
 	The public-facing display name
 	"""
 	name: String
-	"""
-	The icon to show next to the display name
-	"""
-	icon: String
 	"""
 	The provider-specific configuration
 	"""

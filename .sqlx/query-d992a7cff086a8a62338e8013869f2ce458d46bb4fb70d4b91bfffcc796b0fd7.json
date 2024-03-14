@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO providers (slug, name, icon, config) \n            VALUES ($1, $2, $3, $4) \n            RETURNING \n                slug, enabled, name, icon, \n                config as \"config: Json<ProviderConfiguration>\", \n                created_at, updated_at\n        ",
+  "query": "\n            INSERT INTO providers (slug, name, config)\n            VALUES ($1, $2, $3)\n            RETURNING \n                slug, enabled, name,\n                config as \"config: Json<ProviderConfiguration>\", \n                created_at, updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -20,28 +20,22 @@
       },
       {
         "ordinal": 3,
-        "name": "icon",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 4,
         "name": "config: Json<ProviderConfiguration>",
         "type_info": "Json"
       },
       {
-        "ordinal": 5,
+        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Text",
         "Text",
         "Text",
         "Json"
@@ -53,9 +47,8 @@
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "e22747a9b9ccddd818cccf147797c1e832c420c20071a1dabb62ccd37a859e62"
+  "hash": "d992a7cff086a8a62338e8013869f2ce458d46bb4fb70d4b91bfffcc796b0fd7"
 }

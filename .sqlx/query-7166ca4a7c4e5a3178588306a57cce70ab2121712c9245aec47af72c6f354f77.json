@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT \n                slug, enabled, name, icon, \n                config as \"config: Json<ProviderConfiguration>\", \n                created_at, updated_at\n            FROM providers\n            WHERE slug = $1 AND enabled = true\n            ",
+  "query": "\n            SELECT \n                slug, enabled, name,\n                config as \"config: Json<ProviderConfiguration>\", \n                created_at, updated_at\n            FROM providers\n            ",
   "describe": {
     "columns": [
       {
@@ -20,32 +20,24 @@
       },
       {
         "ordinal": 3,
-        "name": "icon",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 4,
         "name": "config: Json<ProviderConfiguration>",
         "type_info": "Json"
       },
       {
-        "ordinal": 5,
+        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": [
-        "Text"
-      ]
+      "Left": []
     },
     "nullable": [
-      false,
       false,
       false,
       false,
@@ -54,5 +46,5 @@
       false
     ]
   },
-  "hash": "74f35b104e8ef6e7634861f01ac6478674dbe2d86544432a53c939230647eb3d"
+  "hash": "7166ca4a7c4e5a3178588306a57cce70ab2121712c9245aec47af72c6f354f77"
 }

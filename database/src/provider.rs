@@ -22,8 +22,6 @@ pub struct Provider {
     pub enabled: bool,
     /// The display name
     pub name: String,
-    /// The URL for the provider's icon
-    pub icon: String,
     /// Provider-specific configuration, i.e. implementation kind, OIDC URLs, scopes, etc
     #[graphql(guard = "guard(checks::admin_only)")]
     pub config: Json<ProviderConfiguration>,
@@ -107,7 +105,7 @@ impl Provider {
             Provider,
             r#"
             SELECT 
-                slug, enabled, name, icon, 
+                slug, enabled, name,
                 config as "config: Json<ProviderConfiguration>", 
                 created_at, updated_at
             FROM providers
@@ -129,7 +127,7 @@ impl Provider {
             Provider,
             r#"
             SELECT 
-                slug, enabled, name, icon, 
+                slug, enabled, name,
                 config as "config: Json<ProviderConfiguration>", 
                 created_at, updated_at
             FROM providers
@@ -155,7 +153,7 @@ impl Provider {
             Provider,
             r#"
             SELECT 
-                slug, enabled, name, icon, 
+                slug, enabled, name,
                 config as "config: Json<ProviderConfiguration>", 
                 created_at, updated_at
             FROM providers
@@ -198,7 +196,7 @@ impl Provider {
             Provider,
             r#"
             SELECT 
-                slug, enabled, name, icon, 
+                slug, enabled, name,
                 config as "config: Json<ProviderConfiguration>", 
                 created_at, updated_at
             FROM providers
@@ -222,7 +220,7 @@ impl Provider {
             Provider,
             r#"
             SELECT 
-                slug, enabled, name, icon, 
+                slug, enabled, name,
                 config as "config: Json<ProviderConfiguration>", 
                 created_at, updated_at
             FROM providers
@@ -240,7 +238,6 @@ impl Provider {
     pub async fn create<'c, 'e, E>(
         slug: &str,
         name: &str,
-        icon: &str,
         config: ProviderConfiguration,
         db: E,
     ) -> Result<Provider>
@@ -251,16 +248,15 @@ impl Provider {
         let provider = query_as!(
             Provider,
             r#"
-            INSERT INTO providers (slug, name, icon, config) 
-            VALUES ($1, $2, $3, $4) 
+            INSERT INTO providers (slug, name, config)
+            VALUES ($1, $2, $3)
             RETURNING 
-                slug, enabled, name, icon, 
+                slug, enabled, name,
                 config as "config: Json<ProviderConfiguration>", 
                 created_at, updated_at
         "#,
             slug,
             name,
-            icon,
             Json(config) as _,
         )
         .fetch_one(db)
@@ -302,7 +298,6 @@ pub struct ProviderUpdater<'p> {
     provider: &'p mut Provider,
     enabled: Option<bool>,
     name: Option<String>,
-    icon: Option<String>,
     config: Option<Json<ProviderConfiguration>>,
 }
 
@@ -312,7 +307,6 @@ impl<'p> ProviderUpdater<'p> {
             provider,
             enabled: None,
             name: None,
-            icon: None,
             config: None,
         }
     }
@@ -341,18 +335,6 @@ impl<'p> ProviderUpdater<'p> {
         self
     }
 
-    /// Update the icon
-    pub fn icon(mut self, icon: String) -> ProviderUpdater<'p> {
-        self.icon = Some(icon);
-        self
-    }
-
-    /// Directly set the icon
-    pub fn override_icon(mut self, icon: Option<String>) -> ProviderUpdater<'p> {
-        self.icon = icon;
-        self
-    }
-
     /// Update the provider-specific configuration
     pub fn config(mut self, config: ProviderConfiguration) -> ProviderUpdater<'p> {
         self.config = Some(Json(config));
@@ -375,11 +357,7 @@ impl<'p> ProviderUpdater<'p> {
         'c: 'e,
         E: 'e + Executor<'c, Database = sqlx::Postgres>,
     {
-        if self.enabled.is_none()
-            && self.name.is_none()
-            && self.icon.is_none()
-            && self.config.is_none()
-        {
+        if self.enabled.is_none() && self.name.is_none() && self.config.is_none() {
             // nothing was changed
             return Ok(());
         }
@@ -397,11 +375,6 @@ impl<'p> ProviderUpdater<'p> {
             separated.push_bind_unseparated(name);
         }
 
-        if let Some(icon) = &self.icon {
-            separated.push("icon = ");
-            separated.push_bind_unseparated(icon);
-        }
-
         if let Some(config) = &self.config {
             separated.push("config = ");
             separated.push_bind_unseparated(config);
@@ -417,10 +390,6 @@ impl<'p> ProviderUpdater<'p> {
 
         if let Some(name) = self.name {
             self.provider.name = name;
-        }
-
-        if let Some(icon) = self.icon {
-            self.provider.icon = icon;
         }
 
         if let Some(config) = self.config {

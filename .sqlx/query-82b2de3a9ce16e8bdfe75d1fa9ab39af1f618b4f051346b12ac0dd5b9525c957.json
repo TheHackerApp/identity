@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT exists(\n                SELECT 1 FROM events\n                INNER JOIN organizers ON events.organization_id = organizers.organization_id\n                INNER JOIN users ON organizers.user_id = users.id\n                WHERE \n                    users.id = $1 \n                    AND events.slug = $2\n            )\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "82b2de3a9ce16e8bdfe75d1fa9ab39af1f618b4f051346b12ac0dd5b9525c957"
+}

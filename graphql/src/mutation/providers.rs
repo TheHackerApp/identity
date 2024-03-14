@@ -41,19 +41,13 @@ impl ProviderMutation {
         if input.name.is_empty() {
             user_errors.push(UserError::new(&["name"], "cannot be empty"));
         }
-        if input.icon.is_empty() {
-            user_errors.push(UserError::new(&["icon"], "cannot be empty"));
-        }
-        if !validators::url(&input.icon) {
-            user_errors.push(UserError::new(&["icon"], "must be a URL"));
-        }
 
         if !user_errors.is_empty() {
             return Ok(user_errors.into());
         }
 
         let db = ctx.data_unchecked::<PgPool>();
-        match Provider::create(&input.slug, &input.name, &input.icon, input.config.0, db).await {
+        match Provider::create(&input.slug, &input.name, input.config.0, db).await {
             Ok(provider) => Ok(provider.into()),
             Err(e) if e.is_unique_violation() => {
                 Ok(UserError::new(&["slug"], "already in use").into())
@@ -77,15 +71,6 @@ impl ProviderMutation {
             }
         }
 
-        if let Some(icon) = &input.icon {
-            if icon.is_empty() {
-                user_errors.push(UserError::new(&["icon"], "cannot be empty"));
-            }
-            if !validators::url(icon) {
-                user_errors.push(UserError::new(&["icon"], "must be a URL"));
-            }
-        }
-
         if !user_errors.is_empty() {
             return Ok(user_errors.into());
         }
@@ -100,7 +85,6 @@ impl ProviderMutation {
             .update()
             .override_enabled(input.enabled)
             .override_name(input.name)
-            .override_icon(input.icon)
             .override_config(input.config)
             .save(db)
             .await
@@ -130,8 +114,6 @@ struct CreateProviderInput {
     slug: String,
     /// The public-facing display name
     name: String,
-    /// The icon to show next to the display name
-    icon: String,
     /// The provider-specific configuration
     // TODO: create specialized input-type for configuration
     config: Json<ProviderConfiguration>,
@@ -146,8 +128,6 @@ struct UpdateProviderInput {
     enabled: Option<bool>,
     /// The public-facing display name
     name: Option<String>,
-    /// The icon to show next to the display name
-    icon: Option<String>,
     /// The provider-specific configuration
     config: Option<Json<ProviderConfiguration>>,
 }
