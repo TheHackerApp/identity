@@ -135,6 +135,8 @@ pub(crate) async fn callback(
         Some(identity) => {
             info!(user.id = identity.user_id, "found existing user");
 
+            // TODO: handle updating identity email & user primary email if necessary
+
             let url = session
                 .return_to
                 .as_ref()
