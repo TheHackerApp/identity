@@ -483,6 +483,10 @@ type Provider {
 	WHen the provider was last updated
 	"""
 	updatedAt: DateTime!
+	"""
+	Get the logo to use
+	"""
+	logo: String!
 }
 
 type Query {

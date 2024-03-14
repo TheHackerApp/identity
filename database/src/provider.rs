@@ -14,6 +14,7 @@ use tracing::instrument;
 /// Configuration for an authentication provider
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "graphql", derive(async_graphql::SimpleObject))]
+#[cfg_attr(feature = "graphql", graphql(complex))]
 pub struct Provider {
     /// A unique identifier for the provider
     pub slug: String,
@@ -284,6 +285,15 @@ impl Provider {
             .await?;
 
         Ok(())
+    }
+}
+
+#[cfg(feature = "graphql")]
+#[async_graphql::ComplexObject]
+impl Provider {
+    /// Get the logo to use
+    async fn logo(&self) -> &'static str {
+        self.config.kind()
     }
 }
 
