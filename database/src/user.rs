@@ -355,7 +355,7 @@ impl<'u> UserUpdater<'u> {
             separated.push_bind_unseparated(primary_email);
         }
 
-        builder.push("WHERE id = ");
+        builder.push(" WHERE id = ");
         builder.push_bind(self.user.id);
         builder.build().execute(db).await?;
 
