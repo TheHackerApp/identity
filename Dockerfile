@@ -1,3 +1,15 @@
+FROM scratch as source
+WORKDIR /app
+
+COPY .cargo .cargo
+COPY .sqlx .sqlx
+COPY database database
+COPY graphql graphql
+COPY session session
+COPY src src
+COPY xtask xtask
+COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
+
 FROM rust:1-bookworm as base
 WORKDIR /app
 
@@ -27,7 +39,7 @@ RUN --mount=type=cache,target=/root/.rustup \
     cargo install --locked cargo-chef@${CARGO_CHEF_VERSION}
 
 FROM chef as planner
-COPY . .
+COPY --from=source /app .
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef as builder
@@ -45,7 +57,7 @@ RUN --mount=type=cache,target=/root/.rustup \
     export CARGO_NET_GIT_FETCH_WITH_CLI=true; \
     cargo chef cook --release --recipe-path recipe.json
 
-COPY . .
+COPY --from=source /app .
 RUN --mount=type=cache,target=/root/.rustup \
     --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
@@ -57,4 +69,6 @@ RUN --mount=type=cache,target=/root/.rustup \
 FROM debian:bookworm-slim as runtime
 
 COPY --from=builder /app/identity /usr/local/bin
+
+ENV ADDRESS=[::]:4243
 ENTRYPOINT ["/usr/local/bin/identity"]
