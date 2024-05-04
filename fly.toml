@@ -1,0 +1,43 @@
+# fly.toml app configuration file generated for tha-identity on 2024-05-03T20:37:22-07:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'tha-identity'
+primary_region = 'sea'
+
+[deploy]
+strategy = "rolling"
+
+[env]
+ADDRESS = "[::]:4243"
+LOG_LEVEL = "info"
+
+OTEL_SERVICE_NAME = "identity"
+
+[[services]]
+internal_port = 4243
+protocol = "tcp"
+
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 0
+
+[[services.ports]]
+handlers = ["http"]
+port = 4243
+force_https = false
+
+[services.concurrency]
+type = "requests"
+hard_limit = 1000
+soft_limit = 750
+
+[[services.http_checks]]
+protocol = "http"
+method = "GET"
+path = "/health"
+
+interval = "30s"
+grace_period = "10s"
+timeout = "5s"
