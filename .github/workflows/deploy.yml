@@ -57,7 +57,7 @@ jobs:
           cache-to: type=gha,mode=max
           cache-from: type=gha
 
-  schema-composition:
+  composition:
     name: Check Schema Composition
     runs-on: ubuntu-22.04
     steps:
@@ -68,13 +68,14 @@ jobs:
       - run: hive schema:check ./schema.graphql --github --service identity
         env:
           HIVE_TOKEN: ${{ secrets.HIVE_TOKEN }}
-  
+
   launch:
     name: Launch
     runs-on: ubuntu-22.04
     if: github.ref == 'refs/heads/main'
     needs:
       - build
+      - composition
     concurrency:
       group: deploy-launch
     steps:
@@ -88,3 +89,17 @@ jobs:
       - run: flyctl deploy --remote-only --image ${{ env.IMAGE_REGISTRY }}/service:deploy-${{ steps.sha.outputs.value }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN }}
+
+  supergraph:
+    name: Update Supergraph
+    runs-on: ubuntu-22.04
+    needs:
+      - launch
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Hive CLI
+        run: curl -sSL https://graphql-hive.com/install.sh | sh
+
+      - run: hive schema:publish ./schema.graphql --github --service identity
+        env:
+          HIVE_TOKEN: ${{ secrets.HIVE_TOKEN }}
