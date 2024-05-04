@@ -33,6 +33,9 @@ jobs:
         with:
           # TODO: change to pushing to GCP on default branch
           push: false
+          sbom: true
+          provenance: mode=max
+
           secrets: |
             shipyard-token=${{ secrets.SHIPYARD_TOKEN }}
           ssh: |
