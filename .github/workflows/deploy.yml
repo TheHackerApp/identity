@@ -30,8 +30,9 @@ jobs:
       - name: Install GCR standalone credential helper
         run: |
           wget -qO docker-credential-gcr.tar.gz https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${VERSION}/docker-credential-gcr_linux_amd64-${VERSION}.tar.gz 
-          tar -zxf docker-credential-gcr.tar.gz -C /usr/local/bin
+          tar -zxf docker-credential-gcr.tar.gz -C /usr/local/bin docker-credential-gcr
           chmod +x /usr/local/bin/docker-credential-gcr
+          rm docker-credential-gcr.tar.gz
         env:
           VERSION: '2.1.22'
 
