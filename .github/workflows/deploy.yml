@@ -28,7 +28,7 @@ jobs:
           workload_identity_provider: ${{ secrets.IMAGES_WORKLOAD_IDENTITY_PROVIDER }}
 
       - uses: google-github-actions/setup-gcloud@v2
-      - run: gcloud artifacts repositories list --location ${{ secrets.IMAGES_LOCATION }}
+      - run: gcloud artifacts repositories describe identity --location ${{ secrets.IMAGES_LOCATION }}
 
       - uses: docker/metadata-action@v5
         id: meta
