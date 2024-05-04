@@ -14,14 +14,10 @@ jobs:
     steps:
       - uses: docker/setup-buildx-action@v3
 
-      - uses: webfactory/ssh-agent@v0.9.0
+      - uses: TheHackerApp/setup-ssh@main
         with:
-          ssh-private-key: ${{ secrets.SHIPYARD_SSH_KEY }}
-      - name: Add Shipyard host key to .ssh/known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          touch ~/.ssh/known_hosts
-          ssh-keyscan ssh.shipyard.rs >> ~/.ssh/known_hosts
+          private-key: ${{ secrets.SHIPYARD_SSH_KEY }}
+          host: ssh.shipyard.rs
 
       - uses: google-github-actions/auth@v2
         with:
