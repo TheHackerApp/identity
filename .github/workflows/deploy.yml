@@ -51,8 +51,7 @@ jobs:
 
       - uses: docker/build-push-action@v5
         with:
-          # TODO: change to pushing to GCP on default branch
-          push: false
+          push: ${{ github.ref == 'refs/heads/main' }}
           sbom: true
           provenance: mode=max
 
