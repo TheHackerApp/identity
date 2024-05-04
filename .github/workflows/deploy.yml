@@ -19,10 +19,18 @@ jobs:
           touch ~/.ssh/known_hosts
           ssh-keyscan ssh.shipyard.rs >> ~/.ssh/known_hosts
 
+      - uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ secrets.IMAGES_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.IMAGES_WORKLOAD_IDENTITY_PROVIDER }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: gcloud artifacts repositories list --location ${{ secrets.IMAGES_LOCATION }}
+
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: us-central1-docker.pkg.dev/${{ secrets.IMAGES_PROJECT_ID }}/identity/service
+          images: ${{ secrets.IMAGES_LOCATION }}-docker.pkg.dev/${{ secrets.IMAGES_PROJECT_ID }}/identity/service
           tags: |
             type=ref,event=branch
             type=ref,event=pr
