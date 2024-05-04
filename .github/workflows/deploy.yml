@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  - push
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SHIPYARD_SSH_KEY }}
+      - name: Add Shipyard host key to .ssh/known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          touch ~/.ssh/known_hosts
+          ssh-keyscan ssh.shipyard.rs >> ~/.ssh/known_hosts
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: us-central1-docker.pkg.dev/${{ secrets.IMAGES_PROJECT_ID }}/identity/service
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=deploy-,enable={{is_default_branch}}
+            type=sha
+
+      - uses: docker/build-push-action@v5
+        with:
+          # TODO: change to pushing to GCP on default branch
+          push: false
+          secrets: |
+            shipyard-token=${{ secrets.SHIPYARD_TOKEN }}
+          ssh: |
+            default=${{ env.SSH_AUTH_SOCK }}
+
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+
+          cache-to: type=gha,mode=max
+          cache-from: type=gha
