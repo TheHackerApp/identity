@@ -27,8 +27,16 @@ jobs:
           project_id: ${{ secrets.IMAGES_PROJECT_ID }}
           workload_identity_provider: ${{ secrets.IMAGES_WORKLOAD_IDENTITY_PROVIDER }}
 
-      - uses: google-github-actions/setup-gcloud@v2
-      - run: gcloud artifacts repositories describe identity --location ${{ secrets.IMAGES_LOCATION }}
+      - name: Install GCR standalone credential helper
+        run: |
+          wget -qO docker-credential-gcr.tar.gz https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${VERSION}/docker-credential-gcr_linux_amd64-${VERSION}.tar.gz 
+          tar -zxf docker-credential-gcr.tar.gz -C /usr/local/bin
+          chmod +x /usr/local/bin/docker-credential-gcr
+        env:
+          VERSION: '2.1.22'
+
+      - name: Configure Artifact Registry credentials
+        run: docker-credential-gcr configure-docker --registries=${{ secrets.IMAGES_LOCATION }}-docker.pkg.dev
 
       - uses: docker/metadata-action@v5
         id: meta
