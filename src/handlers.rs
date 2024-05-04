@@ -2,6 +2,7 @@ use crate::AppState;
 use ::context::{Scope, User};
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
+use axum::http::StatusCode;
 use axum::{
     extract::State,
     http::{
@@ -60,4 +61,9 @@ pub(crate) async fn graphql(
 pub(crate) async fn playground() -> Html<String> {
     let config = GraphQLPlaygroundConfig::new("/graphql").title("Identity Playground");
     Html(playground_source(config))
+}
+
+/// Check that the service is alive
+pub(crate) async fn health() -> StatusCode {
+    StatusCode::NO_CONTENT
 }

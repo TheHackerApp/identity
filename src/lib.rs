@@ -30,7 +30,7 @@ pub fn router(
         cookie_signing_key,
     );
 
-    Router::new()
+    let router = Router::new()
         .route("/context", get(handlers::context))
         .route(
             "/graphql",
@@ -50,5 +50,10 @@ pub fn router(
             admin_domains,
             user_domains,
         ))
-        .layer(logging::http())
+        .layer(logging::http());
+
+    // Excludes the healthcheck from logging
+    Router::new()
+        .route("/health", get(handlers::health))
+        .merge(router)
 }
