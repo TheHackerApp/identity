@@ -100,6 +100,10 @@ jobs:
       - name: Install Hive CLI
         run: curl -sSL https://graphql-hive.com/install.sh | sh
 
-      - run: hive schema:publish ./schema.graphql --github --service identity
+      - run: |
+          hive schema:publish ./schema.graphql \
+            --github \
+            --service identity \
+            --url http://tha-identity.flycast:4243/graphql
         env:
           HIVE_TOKEN: ${{ secrets.HIVE_TOKEN }}
