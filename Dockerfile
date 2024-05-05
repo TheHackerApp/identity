@@ -1,15 +1,3 @@
-FROM scratch as source
-WORKDIR /app
-
-COPY .cargo .cargo
-COPY .sqlx .sqlx
-COPY database database
-COPY graphql graphql
-COPY session session
-COPY src src
-COPY xtask xtask
-COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
-
 FROM rust:1-bookworm as base
 WORKDIR /app
 
@@ -30,21 +18,9 @@ RUN set -eux; \
     tar -xf /tmp/mold.tar.gz -C /usr/local --strip-components 1; \
     rm /tmp/mold.tar.gz
 
-FROM base as chef
+FROM base as builder
 
-ARG CARGO_CHEF_VERSION=0.1.66
-RUN --mount=type=cache,target=/root/.rustup \
-    --mount=type=cache,target=/root/.cargo/registry \
-    --mount=type=cache,target=/root/.cargo/git \
-    cargo install --locked cargo-chef@${CARGO_CHEF_VERSION}
-
-FROM chef as planner
-COPY --from=source /app .
-RUN cargo chef prepare --recipe-path recipe.json
-
-FROM chef as builder
-
-COPY --from=planner /app/recipe.json recipe.json
+COPY . .
 RUN --mount=type=cache,target=/root/.rustup \
     --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
@@ -55,14 +31,6 @@ RUN --mount=type=cache,target=/root/.rustup \
     export CARGO_REGISTRIES_WAFFLEHACKS_TOKEN=$(cat /run/secrets/shipyard-token); \
     export CARGO_REGISTRIES_WAFFLEHACKS_CREDENTIAL_PROVIDER=cargo:token; \
     export CARGO_NET_GIT_FETCH_WITH_CLI=true; \
-    cargo chef cook --release --recipe-path recipe.json
-
-COPY --from=source /app .
-RUN --mount=type=cache,target=/root/.rustup \
-    --mount=type=cache,target=/root/.cargo/registry \
-    --mount=type=cache,target=/root/.cargo/git \
-    --mount=type=cache,target=/app/target \
-    --mount=type=ssh \
     cargo build --release --bin identity; \
     objcopy --compress-debug-sections ./target/release/identity ./identity
 
