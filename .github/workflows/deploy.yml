@@ -104,6 +104,6 @@ jobs:
           hive schema:publish ./schema.graphql \
             --github \
             --service identity \
-            --url http://tha-identity.flycast:4243/graphql
+            --url http://tha-identity.flycast/graphql
         env:
           HIVE_TOKEN: ${{ secrets.HIVE_TOKEN }}
