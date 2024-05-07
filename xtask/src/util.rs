@@ -11,7 +11,7 @@ use tracing::{info, log::LevelFilter};
 pub async fn connect_to_cache(url: &str) -> eyre::Result<ConnectionManager> {
     let client = redis::Client::open(url).wrap_err("invalid cache URL format")?;
     let cache = client
-        .get_tokio_connection_manager()
+        .get_connection_manager()
         .await
         .wrap_err("failed to connect to the cache")?;
 
