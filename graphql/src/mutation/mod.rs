@@ -1,4 +1,4 @@
-use async_graphql::{ComplexObject, MergedObject, SimpleObject};
+use async_graphql::{MergedObject, Object};
 
 mod event;
 mod identity;
@@ -33,21 +33,29 @@ pub struct Mutation(
 );
 
 /// Represents and error in the input of a mutation
-#[derive(Debug, SimpleObject)]
-#[graphql(shareable)]
+#[derive(Debug)]
 pub struct UserError {
     /// The path to the input field that caused the error
-    #[graphql(skip)]
     field: &'static [&'static str],
     /// The error message
     message: String,
 }
 
-#[ComplexObject]
+// Cannot derive SimpleObject due to bug causing lifetime issues with unnecessary referencing
+// for `UserError.field`
+#[Object(shareable)]
+/// Represents and error in the input of a mutation
 impl UserError {
     /// The path to the input field that caused the error
+    #[inline(always)]
     async fn field(&self) -> &'static [&'static str] {
         self.field
+    }
+
+    /// The error message
+    #[inline(always)]
+    async fn message(&self) -> &String {
+        &self.message
     }
 }
 
