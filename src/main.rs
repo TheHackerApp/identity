@@ -1,11 +1,10 @@
-use axum::Server;
 use clap::Parser;
 use eyre::{eyre, WrapErr};
 use globset::{Glob, GlobSet};
 use logging::OpenTelemetryProtocol;
 use redis::aio::ConnectionManager as RedisConnectionManager;
 use std::net::SocketAddr;
-use tokio::signal;
+use tokio::{net::TcpListener, signal};
 use tracing::{info, Level};
 use url::Url;
 
@@ -41,9 +40,12 @@ async fn main() -> eyre::Result<()> {
         &config.cookie_signing_key,
     );
 
+    let listener = TcpListener::bind(&config.address)
+        .await
+        .wrap_err("failed to bind listener")?;
     info!(address = %config.address, "listening and ready to handle requests");
-    Server::bind(&config.address)
-        .serve(router.into_make_service())
+
+    axum::serve(listener, router)
         .with_graceful_shutdown(shutdown())
         .await
         .wrap_err("failed to start server")?;
@@ -55,7 +57,7 @@ async fn main() -> eyre::Result<()> {
 async fn connect_to_cache(url: &str) -> eyre::Result<RedisConnectionManager> {
     let client = redis::Client::open(url).wrap_err("invalid cache URL format")?;
     let manager = client
-        .get_tokio_connection_manager()
+        .get_connection_manager()
         .await
         .wrap_err("failed to connect to the cache")?;
     Ok(manager)

@@ -1,4 +1,4 @@
-use async_graphql::{MergedObject, SimpleObject};
+use async_graphql::{ComplexObject, MergedObject, SimpleObject};
 
 mod event;
 mod identity;
@@ -37,9 +37,18 @@ pub struct Mutation(
 #[graphql(shareable)]
 pub struct UserError {
     /// The path to the input field that caused the error
+    #[graphql(skip)]
     field: &'static [&'static str],
     /// The error message
     message: String,
+}
+
+#[ComplexObject]
+impl UserError {
+    /// The path to the input field that caused the error
+    async fn field(&self) -> &'static [&'static str] {
+        self.field
+    }
 }
 
 impl UserError {

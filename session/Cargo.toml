@@ -7,12 +7,12 @@ edition = "2021"
 
 [dependencies]
 axum = { workspace = true, features = ["json"], optional = true }
-axum-extra = { version = "0.8", features = ["cookie"] }
-base64 = "0.21"
+axum-extra = { version = "0.9", features = ["cookie"] }
+base64 = "0.22"
 blake3 = "1"
 bytes = "1"
 chrono = { workspace = true, features = ["serde"] }
-cookie = "0.17"
+cookie = "0.18"
 database.workspace = true
 futures = { workspace = true, optional = true }
 hmac = "0.12"

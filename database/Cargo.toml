@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 async-graphql = { workspace = true, features = ["dataloader"], optional = true }
-async-trait = { version = "0.1", optional = true }
 chrono.workspace = true
 context.workspace = true
 eyre.workspace = true
@@ -20,4 +19,4 @@ tracing.workspace = true
 
 [features]
 default = []
-graphql = ["async-graphql", "async-trait", "context/graphql", "tokio"]
+graphql = ["async-graphql", "context/graphql", "tokio"]

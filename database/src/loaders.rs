@@ -5,7 +5,6 @@ use async_graphql::{
     dataloader::{DataLoader, Loader, NoCache},
     SchemaBuilder,
 };
-use async_trait::async_trait;
 use std::collections::HashMap;
 
 macro_rules! declare_loader {
@@ -33,7 +32,6 @@ macro_rules! declare_loader {
             }
         }
 
-        #[async_trait]
         impl Loader<$key_type> for $impl_name {
             type Value = $result;
             type Error = $crate::Error;

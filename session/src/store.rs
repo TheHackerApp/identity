@@ -44,7 +44,7 @@ impl Store {
         let expiration = {
             let expiration = (session.expiry - Utc::now()).num_seconds();
             if expiration > 0 {
-                expiration as usize
+                expiration as u64
             } else {
                 0
             }

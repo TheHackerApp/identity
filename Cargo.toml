@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 async-graphql = { workspace = true, features = ["playground"] }
-async-graphql-axum = "6.0"
-axum = { workspace = true, features = ["headers", "http1", "http2", "json", "query", "tokio"] }
+async-graphql-axum = "7.0"
+axum = { workspace = true, features = ["http1", "http2", "json", "query", "tokio"] }
 clap.workspace = true
 color-eyre.workspace = true
 context = { workspace = true, features = ["axum"] }
@@ -20,12 +20,12 @@ graphql.workspace = true
 logging = { workspace = true, features = ["http", "opentelemetry"] }
 rand.workspace = true
 redis.workspace = true
-reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde.workspace = true
 serde_json.workspace = true
 session = { workspace = true, features = ["server"] }
-tokio = { workspace = true, features = ["macros", "signal"] }
-tower-http = { version = "0.4", default-features = false, features = ["cors"] }
+tokio = { workspace = true, features = ["macros", "net", "signal"] }
+tower-http = { version = "0.5", default-features = false, features = ["cors"] }
 tracing.workspace = true
 url.workspace = true
 
@@ -41,8 +41,8 @@ members = [
 ]
 
 [workspace.dependencies]
-async-graphql = { version = "6.0", features = ["chrono"], default-features = false }
-axum = { version = "0.6", default-features = false }
+async-graphql = { version = "7.0", features = ["chrono"], default-features = false }
+axum = { version = "0.7", default-features = false }
 chrono = "0.4"
 clap = { version = "4.4", features = ["derive", "env"] }
 color-eyre = "0.6"
@@ -50,9 +50,9 @@ context = { version = "0.5", registry = "wafflehacks" }
 dotenvy = "0.15"
 eyre = "0.6"
 futures = { version = "0.3", default-features = false, features = ["async-await", "std"] }
-logging = { version = "0.2", registry = "wafflehacks" }
+logging = { version = "0.3", registry = "wafflehacks" }
 rand = "0.8"
-redis = { version = "0.23", default-features = false, features = ["aio", "connection-manager", "tokio-comp"] }
+redis = { version = "0.25", default-features = false, features = ["aio", "connection-manager", "tokio-comp"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sqlx = { version = "0.7", features = ["postgres", "runtime-tokio", "tls-rustls"] }

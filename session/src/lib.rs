@@ -210,7 +210,7 @@ impl Manager {
         };
 
         Some(
-            Cookie::build(COOKIE_NAME, session_token)
+            Cookie::build((COOKIE_NAME, session_token))
                 .http_only(true)
                 .same_site(SameSite::Lax)
                 .secure(self.settings.secure)
@@ -218,7 +218,7 @@ impl Manager {
                 .expires(expiry)
                 .max_age(max_age)
                 .path("/")
-                .finish(),
+                .build(),
         )
     }
 }
