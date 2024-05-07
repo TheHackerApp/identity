@@ -36,6 +36,11 @@ RUN --mount=type=cache,target=/root/.rustup \
 
 FROM debian:bookworm-slim as runtime
 
+RUN set -eux; \
+    apt-get update;  \
+    apt-get -y install ca-certificates; \
+    rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /app/identity /usr/local/bin
 
 ENV ADDRESS=[::]:4243
