@@ -10,6 +10,7 @@ pub fn run(args: Args) -> eyre::Result<()> {
     let mut output = OpenOptions::new()
         .write(true)
         .create(true)
+        .truncate(true)
         .create_new(!args.force)
         .open(&args.output)
         .wrap_err("failed to open output")?;
