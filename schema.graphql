@@ -402,7 +402,7 @@ type Organization @key(fields: "id") {
 """
 Maps a user to an organization as an organizer
 """
-type Organizer {
+type Organizer @key(fields: "organization { id } user { id }") {
 	"""
 	The permissions the user has
 	"""
@@ -428,7 +428,7 @@ type Organizer {
 """
 Maps a user to an event as a participant
 """
-type Participant {
+type Participant @key(fields: "event { slug } user { id }") {
 	"""
 	When the mapping was first created
 	"""

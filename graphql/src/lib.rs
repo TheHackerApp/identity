@@ -3,6 +3,7 @@ use async_graphql::{
 };
 use database::{loaders::RegisterDataLoaders, PgPool};
 
+mod entities;
 mod errors;
 mod mutation;
 mod query;

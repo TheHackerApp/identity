@@ -112,6 +112,25 @@ impl Participant {
         Ok(by_event)
     }
 
+    /// Find a participant entry
+    #[instrument(name = "Participant::find", skip(db))]
+    pub async fn find<'c, 'e, E>(user_id: i32, event: &str, db: E) -> Result<Option<Participant>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
+        let participant = query_as!(
+            Participant,
+            "SELECT * FROM participants WHERE event = $1 AND user_id = $2",
+            event,
+            user_id
+        )
+        .fetch_optional(db)
+        .await?;
+
+        Ok(participant)
+    }
+
     /// Get all the events a user is participating in
     #[instrument(name = "Participant::for_user", skip(db))]
     pub async fn for_user<'c, 'e, E>(user_id: i32, db: E) -> Result<Vec<Participant>>

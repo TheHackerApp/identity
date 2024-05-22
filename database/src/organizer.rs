@@ -148,6 +148,32 @@ impl Organizer {
         Ok(by_organization_id)
     }
 
+    /// Find an organizer entry
+    #[instrument(name = "Organizer::find", skip(db))]
+    pub async fn find<'c, 'e, E>(
+        user_id: i32,
+        organization_id: i32,
+        db: E,
+    ) -> Result<Option<Organizer>>
+    where
+        'c: 'e,
+        E: 'e + Executor<'c, Database = sqlx::Postgres>,
+    {
+        let organizer = query_as!(
+            Organizer,
+            r#"
+            SELECT organization_id, user_id, role as "role: Role", created_at, updated_at
+            FROM organizers
+            WHERE organization_id = $1 AND user_id = $2
+            "#,
+            organization_id,
+            user_id
+        )
+        .fetch_optional(db)
+        .await?;
+        Ok(organizer)
+    }
+
     /// Get all the organizations a user is part of
     #[instrument(name = "Organizer::for_user", skip(db))]
     pub async fn for_user<'c, 'e, E>(user_id: i32, db: E) -> Result<Vec<Organizer>>

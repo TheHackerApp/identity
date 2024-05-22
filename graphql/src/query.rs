@@ -1,11 +1,14 @@
-use crate::errors::{Forbidden, Unauthorized};
+use crate::{
+    entities,
+    errors::{Forbidden, Unauthorized},
+};
 use async_graphql::{Context, Error, Object, OneofObject, Result, ResultExt};
 use context::{checks, guard, Scope, User as UserContext};
 use database::{
     loaders::{
         EventLoader, OrganizationLoader, ProviderLoader, UserByPrimaryEmailLoader, UserLoader,
     },
-    Event, Organization, PgPool, Provider, User,
+    Event, Organization, Organizer, Participant, PgPool, Provider, User,
 };
 use tracing::instrument;
 
@@ -196,6 +199,34 @@ impl Query {
         let loader = ctx.data_unchecked::<UserLoader>();
         let user = loader.load_one(id).await.extend()?;
         Ok(user)
+    }
+
+    #[graphql(entity)]
+    #[instrument(name = "Query::participant_entity_by_id", skip(self, ctx))]
+    async fn participant_entity_by_id(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(key)] event: entities::Event,
+        #[graphql(key)] user: entities::User,
+    ) -> Result<Option<Participant>> {
+        let db = ctx.data_unchecked::<PgPool>();
+        let participant = Participant::find(user.id, &event.slug, db).await.extend()?;
+        Ok(participant)
+    }
+
+    #[graphql(entity)]
+    #[instrument(name = "Query::organizer_entity_by_id", skip(self, ctx))]
+    async fn organizer_entity_by_id(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(key)] organization: entities::Organization,
+        #[graphql(key)] user: entities::User,
+    ) -> Result<Option<Organizer>> {
+        let db = ctx.data_unchecked::<PgPool>();
+        let organizer = Organizer::find(user.id, organization.id, db)
+            .await
+            .extend()?;
+        Ok(organizer)
     }
 }
 
