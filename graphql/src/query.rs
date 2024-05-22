@@ -166,7 +166,7 @@ impl Query {
     }
 
     #[graphql(entity)]
-    #[instrument(name = "Query::event_entity_by_slug", skip(self, ctx))]
+    #[instrument(name = "Query::entity::event", skip(self, ctx))]
     async fn event_entity_by_slug(
         &self,
         ctx: &Context<'_>,
@@ -178,7 +178,7 @@ impl Query {
     }
 
     #[graphql(entity)]
-    #[instrument(name = "Query::organization_entity_by_id", skip(self, ctx))]
+    #[instrument(name = "Query::entity::organization", skip(self, ctx))]
     async fn organization_entity_by_id(
         &self,
         ctx: &Context<'_>,
@@ -190,7 +190,7 @@ impl Query {
     }
 
     #[graphql(entity)]
-    #[instrument(name = "Query::user_entity_by_id", skip(self, ctx))]
+    #[instrument(name = "Query::entity::user", skip(self, ctx))]
     async fn user_entity_by_id(
         &self,
         ctx: &Context<'_>,
@@ -202,7 +202,7 @@ impl Query {
     }
 
     #[graphql(entity)]
-    #[instrument(name = "Query::participant_entity_by_id", skip(self, ctx))]
+    #[instrument(name = "Query::entity::participant", skip(self, ctx))]
     async fn participant_entity_by_id(
         &self,
         ctx: &Context<'_>,
@@ -215,7 +215,7 @@ impl Query {
     }
 
     #[graphql(entity)]
-    #[instrument(name = "Query::organizer_entity_by_id", skip(self, ctx))]
+    #[instrument(name = "Query::entity::organizer", skip(self, ctx))]
     async fn organizer_entity_by_id(
         &self,
         ctx: &Context<'_>,
