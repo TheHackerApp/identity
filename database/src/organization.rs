@@ -8,6 +8,11 @@ use crate::{
 use async_graphql::{Context, ResultExt};
 use chrono::{DateTime, Utc};
 #[cfg(feature = "graphql")]
+use context::{
+    checks::{guard_where, has_at_least_role},
+    UserRole,
+};
+#[cfg(feature = "graphql")]
 use futures::TryStreamExt;
 use sqlx::{query, query_as, Executor, QueryBuilder};
 #[cfg(feature = "graphql")]
@@ -144,11 +149,11 @@ impl Organization {
     }
 }
 
-// TODO: restrict to organization members/admins
 #[cfg(feature = "graphql")]
 #[async_graphql::ComplexObject]
 impl Organization {
     /// All the events owned by the organization
+    #[graphql(guard = "guard_where(has_at_least_role, UserRole::Organizer)")]
     #[instrument(name = "Organization::events", skip_all, fields(%self.id))]
     async fn events(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Event>> {
         let loader = ctx.data_unchecked::<EventsForOrganizationLoader>();
@@ -158,6 +163,7 @@ impl Organization {
     }
 
     /// The owner of the organization
+    #[graphql(guard = "guard_where(has_at_least_role, UserRole::Organizer)")]
     #[instrument(name = "Organization::owner", skip_all, fields(%self.id))]
     async fn owner(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         let loader = ctx.data_unchecked::<UserLoader>();

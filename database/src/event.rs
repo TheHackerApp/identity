@@ -8,6 +8,11 @@ use crate::{
 use async_graphql::ResultExt;
 use chrono::{DateTime, Utc};
 #[cfg(feature = "graphql")]
+use context::{
+    checks::{guard_where, has_at_least_role},
+    UserRole,
+};
+#[cfg(feature = "graphql")]
 use futures::TryStreamExt;
 use sqlx::{query, query_as, Executor, QueryBuilder};
 #[cfg(feature = "graphql")]
@@ -27,6 +32,10 @@ pub struct Event {
     #[cfg_attr(feature = "graphql", graphql(skip))]
     pub organization_id: i32,
     /// When write-access expires
+    #[cfg_attr(
+        feature = "graphql",
+        graphql(guard = "guard_where(has_at_least_role, UserRole::Organizer)")
+    )]
     pub expires_on: DateTime<Utc>,
     /// When the event was first created
     pub created_at: DateTime<Utc>,
@@ -218,7 +227,7 @@ impl Event {
     }
 
     /// The custom domain for the event
-    // TODO: restrict to directors/admin
+    #[graphql(guard = "guard_where(has_at_least_role, UserRole::Organizer)")]
     #[instrument(name = "Event::custom_domain", skip_all, fields(%self.slug))]
     async fn custom_domain(
         &self,
