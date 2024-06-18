@@ -1,5 +1,3 @@
-directive @oneOf on INPUT_OBJECT
-
 """
 Input for adding a user to an event
 """
@@ -247,6 +245,10 @@ type Event @key(fields: "slug") {
 	Whether the event is active
 	"""
 	active: Boolean!
+	"""
+	The domain where the event is accessible
+	"""
+	domain: String!
 	"""
 	The custom domain for the event
 	"""
@@ -846,7 +848,9 @@ type UserError @shareable {
 }
 
 directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @oneOf on INPUT_OBJECT
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @specifiedBy(url: String!) on SCALAR
 extend schema @link(
 	url: "https://specs.apollo.dev/federation/v2.3",
 	import: ["@key", "@tag", "@shareable", "@inaccessible", "@override", "@external", "@provides", "@requires", "@composeDirective", "@interfaceObject"]

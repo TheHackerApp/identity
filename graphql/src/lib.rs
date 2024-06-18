@@ -2,6 +2,7 @@ use async_graphql::{
     extensions::Analyzer, EmptySubscription, SDLExportOptions, Schema as BaseSchema, SchemaBuilder,
 };
 use database::{loaders::RegisterDataLoaders, PgPool};
+use state::Domains;
 
 mod entities;
 mod errors;
@@ -23,8 +24,12 @@ fn builder() -> SchemaBuilder<Query, Mutation, EmptySubscription> {
 }
 
 /// Build the schema with the necessary extensions
-pub fn schema(db: PgPool) -> Schema {
-    builder().register_dataloaders(&db).data(db).finish()
+pub fn schema(db: PgPool, domains: Domains) -> Schema {
+    builder()
+        .register_dataloaders(&db)
+        .data(db)
+        .data(domains)
+        .finish()
 }
 
 /// Export the GraphQL schema

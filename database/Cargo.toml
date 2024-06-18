@@ -16,7 +16,8 @@ serde_json.workspace = true
 sqlx = { workspace = true, features = ["chrono", "json", "macros"] }
 tokio = { workspace = true, optional = true }
 tracing.workspace = true
+state = { workspace = true, optional = true }
 
 [features]
 default = []
-graphql = ["async-graphql", "context/graphql", "tokio"]
+graphql = ["async-graphql", "context/graphql", "state", "tokio"]

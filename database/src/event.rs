@@ -16,6 +16,8 @@ use context::{
 use futures::TryStreamExt;
 use sqlx::{query, query_as, Executor, QueryBuilder};
 #[cfg(feature = "graphql")]
+use state::Domains;
+#[cfg(feature = "graphql")]
 use std::collections::HashMap;
 use tracing::instrument;
 
@@ -224,6 +226,21 @@ impl Event {
     /// Whether the event is active
     async fn active(&self) -> bool {
         self.is_active()
+    }
+
+    /// The domain where the event is accessible
+    #[instrument(name = "Event::domain", skip_all, fields(%self.slug))]
+    async fn domain(&self, ctx: &async_graphql::Context<'_>) -> async_graphql::Result<String> {
+        let loader = ctx.data_unchecked::<CustomDomainLoader>();
+        let custom_domain = loader.load_one(self.slug.to_owned()).await.extend()?;
+
+        Ok(match custom_domain {
+            Some(custom) => custom.name,
+            None => {
+                let domains = ctx.data_unchecked::<Domains>();
+                domains.for_event(&self.slug)
+            }
+        })
     }
 
     /// The custom domain for the event
