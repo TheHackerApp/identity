@@ -1,4 +1,4 @@
-use crate::state::{AllowedRedirectDomains, ApiUrl, AppState, FrontendUrl};
+use crate::state::AppState;
 use axum::{
     extract::{Json, Path, Query, State},
     response::Redirect,
@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use session::extract::{
     CurrentUser, Mutable, OAuthSession, RegistrationNeededSession, UnauthenticatedSession,
 };
+use state::{AllowedRedirectDomains, ApiUrl, FrontendUrl};
 use tracing::{error, info, instrument, Span};
 use url::{Host, Url};
 

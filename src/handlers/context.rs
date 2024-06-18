@@ -1,5 +1,4 @@
 use super::error::{Error, Result};
-use crate::state::Domains;
 use axum::{
     extract::{Query, State},
     http::uri::Authority,
@@ -11,6 +10,7 @@ use context::{
 use database::{Event, PgPool, User};
 use serde::Deserialize;
 use session::SessionState;
+use state::Domains;
 use tracing::{info, instrument, Span};
 
 #[derive(Deserialize)]
@@ -69,7 +69,7 @@ async fn determine_scope_context(
                 info!(scope = "user");
                 Scope::User
             } else {
-                let event = if let Some(slug) = domains.event_subdomain_for(host) {
+                let event = if let Some(slug) = domains.extract_slug_for_subdomain(host) {
                     info!(%slug, "handling hosted domain");
                     Event::find(slug, db).await?
                 } else {

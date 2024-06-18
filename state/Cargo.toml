@@ -1,0 +1,8 @@
+[package]
+name = "state"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+globset = { version = "0.4", default-features = false }
+url.workspace = true
