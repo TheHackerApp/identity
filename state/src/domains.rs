@@ -1,4 +1,4 @@
-use globset::GlobSet;
+use globset::{Glob, GlobSet};
 use std::{collections::HashSet, sync::Arc};
 
 /// Checks if the request domain is allowed to be redirected to
@@ -12,9 +12,19 @@ impl AllowedRedirectDomains {
     }
 }
 
-impl From<GlobSet> for AllowedRedirectDomains {
-    fn from(matcher: GlobSet) -> Self {
-        Self(Arc::new(matcher))
+impl TryFrom<Vec<String>> for AllowedRedirectDomains {
+    type Error = globset::Error;
+
+    fn try_from(raw: Vec<String>) -> Result<Self, Self::Error> {
+        let mut set = GlobSet::builder();
+
+        for glob in raw {
+            let glob = Glob::new(&glob)?;
+            set.add(glob);
+        }
+
+        let set = set.build()?;
+        Ok(AllowedRedirectDomains(Arc::new(set)))
     }
 }
 

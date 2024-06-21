@@ -15,12 +15,11 @@ dotenvy.workspace = true
 eyre.workspace = true
 form_urlencoded = "1.2"
 futures.workspace = true
-globset = { version = "0.4", default-features = false }
 graphql.workspace = true
 logging = { workspace = true, features = ["http", "opentelemetry"] }
 rand.workspace = true
 redis.workspace = true
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 session = { workspace = true, features = ["server"] }
@@ -55,6 +54,7 @@ futures = { version = "0.3", default-features = false, features = ["async-await"
 logging = { version = "0.3", registry = "wafflehacks" }
 rand = "0.8"
 redis = { version = "0.25", default-features = false, features = ["aio", "connection-manager", "tokio-comp"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sqlx = { version = "0.7", features = ["postgres", "runtime-tokio", "tls-rustls"] }

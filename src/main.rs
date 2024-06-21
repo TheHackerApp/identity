@@ -1,8 +1,8 @@
 use clap::Parser;
 use eyre::{eyre, WrapErr};
-use globset::{Glob, GlobSet};
 use logging::OpenTelemetryProtocol;
 use redis::aio::ConnectionManager as RedisConnectionManager;
+use state::{AllowedRedirectDomains, Domains};
 use std::net::SocketAddr;
 use tokio::{net::TcpListener, signal};
 use tracing::{info, Level};
@@ -22,22 +22,31 @@ async fn main() -> eyre::Result<()> {
     logging.init()?;
 
     let db = database::connect(&config.database_url).await?;
-    let cache = connect_to_cache(&config.cache_url).await?;
 
-    let allowed_redirect_domains = config
-        .allowed_redirect_domains_matcher()
-        .wrap_err("invalid allowed redirect domains")?;
-    let router = identity::router(
-        config.api_url,
+    let cache = connect_to_cache(&config.cache_url).await?;
+    let sessions = session::Manager::new(
         cache,
-        db,
-        config.frontend_url,
-        allowed_redirect_domains,
+        &config.cookie_domain,
+        config.frontend_url.scheme() == "https",
+        &config.cookie_signing_key,
+    );
+
+    let domains = Domains::new(
         config.domain_suffix,
         config.admin_domains,
         config.user_domains,
-        &config.cookie_domain,
-        &config.cookie_signing_key,
+    );
+    let allowed_redirect_domains =
+        AllowedRedirectDomains::try_from(config.allowed_redirect_domains)
+            .wrap_err("invalid allowed redirect domains")?;
+
+    let router = identity::router(
+        config.api_url,
+        db,
+        config.frontend_url,
+        allowed_redirect_domains,
+        domains,
+        sessions,
     );
 
     let listener = TcpListener::bind(&config.address)
@@ -161,19 +170,6 @@ struct Config {
     env = "OTEL_EXPORTER_OTLP_PROTOCOL",
     )]
     opentelemetry_protocol: OpenTelemetryProtocol,
-}
-
-impl Config {
-    /// Construct a matcher for the allowed redirect domains
-    fn allowed_redirect_domains_matcher(&self) -> Result<GlobSet, globset::Error> {
-        let mut set = GlobSet::builder();
-
-        for glob in &self.allowed_redirect_domains {
-            let glob = Glob::new(glob)?;
-            set.add(glob);
-        }
-        set.build()
-    }
 }
 
 /// Load environment variables from a .env file, if it exists.

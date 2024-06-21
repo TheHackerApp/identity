@@ -1,7 +1,6 @@
 use crate::handlers::OAuthClient;
 use axum::extract::FromRef;
 use database::PgPool;
-use globset::GlobSet;
 use state::{AllowedRedirectDomains, ApiUrl, Domains, FrontendUrl};
 use url::Url;
 
@@ -35,20 +34,16 @@ state! {
 }
 
 impl AppState {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         api_url: Url,
         db: PgPool,
         frontend_url: Url,
         sessions: session::Manager,
-        allowed_redirect_domains: GlobSet,
-        domain_suffix: String,
-        admin_domains: Vec<String>,
-        user_domains: Vec<String>,
+        allowed_redirect_domains: AllowedRedirectDomains,
+        domains: Domains,
     ) -> AppState {
-        let domains = Domains::new(domain_suffix, admin_domains, user_domains);
         AppState {
-            allowed_redirect_domains: allowed_redirect_domains.into(),
+            allowed_redirect_domains,
             api_url: api_url.into(),
             db: db.clone(),
             domains: domains.clone(),
