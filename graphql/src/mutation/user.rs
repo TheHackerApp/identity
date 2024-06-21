@@ -1,4 +1,5 @@
 use super::{results, UserError};
+use crate::webhooks;
 use async_graphql::{Context, InputObject, Object, Result, ResultExt};
 use database::{
     loaders::{IdentitiesForUserLoader, UserLoader},
@@ -76,6 +77,9 @@ impl UserMutation {
             .save(db)
             .await
             .extend()?;
+
+        let webhooks = ctx.data_unchecked::<webhooks::Client>();
+        webhooks.on_participant_changed(user.id, &user.primary_email);
 
         Ok(user.into())
     }

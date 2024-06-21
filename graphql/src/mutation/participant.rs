@@ -1,4 +1,5 @@
 use super::UserError;
+use crate::webhooks;
 use async_graphql::{Context, InputObject, Object, Result, ResultExt, SimpleObject};
 use database::{
     loaders::{EventLoader, UserLoader},
@@ -30,6 +31,9 @@ impl ParticipantMutation {
 
         let db = ctx.data_unchecked::<PgPool>();
         Participant::add(&event.slug, user.id, db).await.extend()?;
+
+        let webhooks = ctx.data_unchecked::<webhooks::Client>();
+        webhooks.on_participant_changed(user.id, &user.primary_email);
 
         Ok((user, event).into())
     }

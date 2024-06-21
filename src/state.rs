@@ -38,6 +38,7 @@ impl AppState {
         api_url: Url,
         db: PgPool,
         frontend_url: Url,
+        portal_url: Url,
         sessions: session::Manager,
         allowed_redirect_domains: AllowedRedirectDomains,
         domains: Domains,
@@ -49,7 +50,7 @@ impl AppState {
             domains: domains.clone(),
             frontend_url: frontend_url.into(),
             oauth_client: OAuthClient::default(),
-            schema: graphql::schema(db, domains),
+            schema: graphql::schema(db, domains, portal_url),
             sessions,
         }
     }

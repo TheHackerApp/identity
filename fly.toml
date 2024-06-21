@@ -13,6 +13,8 @@ strategy = "rolling"
 ADDRESS = "[::]:4243"
 LOG_LEVEL = "info"
 
+PORTAL_URL = "http://tha-portal.flycast"
+
 OTEL_SERVICE_NAME = "identity"
 
 [http_service]

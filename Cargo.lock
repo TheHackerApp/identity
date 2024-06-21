@@ -1104,6 +1104,7 @@ dependencies = [
  "reqwest 0.12.4",
  "serde",
  "state",
+ "tokio",
  "tracing",
  "url",
 ]

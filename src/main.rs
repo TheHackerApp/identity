@@ -44,6 +44,7 @@ async fn main() -> eyre::Result<()> {
         config.api_url,
         db,
         config.frontend_url,
+        config.portal_url,
         allowed_redirect_domains,
         domains,
         sessions,
@@ -151,6 +152,11 @@ struct Config {
     /// This should be the common root domain between the API and account domains
     #[arg(long, env = "COOKIE_DOMAIN")]
     cookie_domain: String,
+
+    /// The internal URL to the portal service
+    // TODO: remove in favor of generic webhook solution
+    #[arg(long, env = "PORTAL_URL")]
+    portal_url: Url,
 
     /// A secret to sign the session cookie with
     ///

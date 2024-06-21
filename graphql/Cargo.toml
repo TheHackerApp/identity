@@ -10,6 +10,9 @@ async-graphql.workspace = true
 context = { workspace = true, features = ["graphql"] }
 database = { workspace = true, features = ["graphql"] }
 logging = { workspace = true, features = ["graphql"] }
+reqwest.workspace = true
+serde.workspace = true
 state.workspace = true
+tokio.workspace = true
 tracing.workspace = true
 url = "2.4"

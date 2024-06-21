@@ -3,11 +3,13 @@ use async_graphql::{
 };
 use database::{loaders::RegisterDataLoaders, PgPool};
 use state::Domains;
+use url::Url;
 
 mod entities;
 mod errors;
 mod mutation;
 mod query;
+mod webhooks;
 
 use mutation::Mutation;
 use query::Query;
@@ -24,9 +26,12 @@ fn builder() -> SchemaBuilder<Query, Mutation, EmptySubscription> {
 }
 
 /// Build the schema with the necessary extensions
-pub fn schema(db: PgPool, domains: Domains) -> Schema {
+pub fn schema(db: PgPool, domains: Domains, portal_url: Url) -> Schema {
+    let client = webhooks::Client::new(portal_url);
+
     builder()
         .register_dataloaders(&db)
+        .data(client)
         .data(db)
         .data(domains)
         .finish()
